@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CAFD77692FDFC584004256DA /* Argon2Swift in Frameworks */ = {isa = PBXBuildFile; productRef = CAFD77682FDFC584004256DA /* Argon2Swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CA22692E2FDF97D8009FC945 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CAFD77692FDFC584004256DA /* Argon2Swift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = TestSmtpServer;
 			packageProductDependencies = (
+				CAFD77682FDFC584004256DA /* Argon2Swift */,
 			);
 			productName = TestSmtpServer;
 			productReference = CA2269202FDF97D7009FC945 /* TestSmtpServer.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = CA2269172FDF97D7009FC945;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CAFD77672FDFC584004256DA /* XCRemoteSwiftPackageReference "Argon2Swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CA2269212FDF97D7009FC945 /* Products */;
 			projectDirPath = "";
@@ -410,7 +419,7 @@
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -440,7 +449,7 @@
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -563,6 +572,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CAFD77672FDFC584004256DA /* XCRemoteSwiftPackageReference "Argon2Swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tmthecoder/Argon2Swift.git";
+			requirement = {
+				kind = revision;
+				revision = 53543623fefe68461b7eeea03d7f96677c2fd76d;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CAFD77682FDFC584004256DA /* Argon2Swift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAFD77672FDFC584004256DA /* XCRemoteSwiftPackageReference "Argon2Swift" */;
+			productName = Argon2Swift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CA2269182FDF97D7009FC945 /* Project object */;
 }
