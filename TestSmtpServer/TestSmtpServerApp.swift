@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+enum Constants {
+    static let certificateKey = Bundle.main.bundleIdentifier ?? "jp.uhimania.TestSmtpServer"
+}
+
 @main
 struct TestSmtpServerApp: App {
     var body: some Scene {

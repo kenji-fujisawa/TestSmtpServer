@@ -1,5 +1,5 @@
 {
-  "originHash" : "dd7d9a5c4d4bdb59b6663b1e87f26c1899f753ca24d3cccc6cc47d792f5ab237",
+  "originHash" : "37c9f22bb5d0790f649376dbca1a804f6b79fff853479ab62a859a86a86f803d",
   "pins" : [
     {
       "identity" : "argon2swift",
@@ -7,6 +7,24 @@
       "location" : "https://github.com/tmthecoder/Argon2Swift.git",
       "state" : {
         "revision" : "53543623fefe68461b7eeea03d7f96677c2fd76d"
+      }
+    },
+    {
+      "identity" : "bluesocket",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kitura/BlueSocket",
+      "state" : {
+        "revision" : "7b23a867008e0027bfd6f4d398d44720707bc8ca",
+        "version" : "2.0.4"
+      }
+    },
+    {
+      "identity" : "bluesslservice",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Kitura/BlueSSLService",
+      "state" : {
+        "revision" : "b27a94d063962dfa1bba9f79814c4ef202cf33a4",
+        "version" : "2.0.2"
       }
     },
     {
