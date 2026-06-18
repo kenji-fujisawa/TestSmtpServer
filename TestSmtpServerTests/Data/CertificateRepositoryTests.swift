@@ -25,6 +25,20 @@ struct CertificateRepositoryTests {
         #expect(bookmarkSource.key == key)
         #expect(secureSource.value == password)
         #expect(secureSource.key == key)
+        
+        let url2 = FileManager.default.temporaryDirectory.appendingPathComponent("tmp2.txt")
+        try repository.save(certificate: url2, forKey: key)
+        #expect(bookmarkSource.url == url2)
+        #expect(bookmarkSource.key == key)
+        #expect(secureSource.value == password)
+        #expect(secureSource.key == key)
+        
+        let password2 = "pass2"
+        try repository.save(password: password2, forKey: key)
+        #expect(bookmarkSource.url == url2)
+        #expect(bookmarkSource.key == key)
+        #expect(secureSource.value == password2)
+        #expect(secureSource.key == key)
     }
     
     @Test func testLoad() async throws {
