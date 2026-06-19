@@ -11,6 +11,8 @@ import Foundation
 class UserSettingViewModel {
     var users: [String] = []
     var processing: Bool = false
+    var addError: String? = nil
+    var deleteError: String? = nil
     
     @ObservationIgnored private let userRepository: UserRepository
     
@@ -28,17 +30,39 @@ class UserSettingViewModel {
     func addUser(name: String, password: String) {
         guard processing == false else { return }
         
+        addError = nil
+        deleteError = nil
+        
         processing = true
-        Task {
+        Task { @MainActor in
             defer { processing = false }
             
-            try? await userRepository.register(name: name, password: password)
-            updateUsers()
+            do {
+                try await userRepository.register(name: name, password: password)
+                updateUsers()
+            } catch DefaultUserRepository.RegisterError.duplicateUser {
+                addError = "ユーザ名が重複しています"
+            } catch DefaultUserRepository.RegisterError.invalidName {
+                addError = "ユーザ名が無効です"
+            } catch DefaultUserRepository.RegisterError.invalidPassword {
+                addError = "パスワードが無効です"
+            } catch {
+                addError = error.localizedDescription
+            }
         }
     }
     
     func deleteUser(name: String) {
-        try? userRepository.unregister(name: name)
-        updateUsers()
+        addError = nil
+        deleteError = nil
+        
+        do {
+            try userRepository.unregister(name: name)
+            updateUsers()
+        } catch DefaultUserRepository.UnregisterError.notFound {
+            deleteError = "ユーザが存在しません"
+        } catch {
+            deleteError = error.localizedDescription
+        }
     }
 }

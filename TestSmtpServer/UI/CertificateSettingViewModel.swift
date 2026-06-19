@@ -11,6 +11,7 @@ import Foundation
 class CertificateSettingViewModel {
     var certificate: String = ""
     var password: String = ""
+    var error: String? = nil
     
     @ObservationIgnored private let certificateRepository: CertificateRepository
     
@@ -24,12 +25,24 @@ class CertificateSettingViewModel {
     }
     
     func updateCertificate(_ url: URL) {
-        try? certificateRepository.save(certificate: url, forKey: Constants.certificateKey)
-        self.certificate = url.path()
+        error = nil
+        
+        do {
+            try certificateRepository.save(certificate: url, forKey: Constants.certificateKey)
+            self.certificate = url.path()
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
     
     func updatePassword(_ password: String) {
-        try? certificateRepository.save(password: password, forKey: Constants.certificateKey)
-        self.password = password
+        error = nil
+        
+        do {
+            try certificateRepository.save(password: password, forKey: Constants.certificateKey)
+            self.password = password
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 }

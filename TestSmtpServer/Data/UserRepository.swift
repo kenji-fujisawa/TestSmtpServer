@@ -17,6 +17,7 @@ protocol UserRepository {
 class DefaultUserRepository: UserRepository {
     enum RegisterError: Error {
         case duplicateUser
+        case invalidName
         case invalidPassword
     }
     
@@ -38,6 +39,7 @@ class DefaultUserRepository: UserRepository {
     
     func register(name: String, password: String) async throws {
         guard try source.getUser(name: name) == nil else { throw RegisterError.duplicateUser }
+        guard name.allSatisfy({ $0.isWhitespace }) == false else { throw RegisterError.invalidName }
         guard !password.isEmpty else { throw RegisterError.invalidPassword }
         
         let user = User(

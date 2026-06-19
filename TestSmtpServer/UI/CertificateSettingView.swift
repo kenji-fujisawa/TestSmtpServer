@@ -33,6 +33,7 @@ struct CertificateSettingView: View {
                     }
                 }
             }
+            
             SecureField(text: $viewModel.password, prompt: Text("証明書のパスワードを入力")) {
                 Text("パスワード")
             }
@@ -45,6 +46,14 @@ struct CertificateSettingView: View {
             }
             .onSubmit {
                 viewModel.updatePassword(viewModel.password)
+            }
+            
+            if let error = viewModel.error {
+                HStack {
+                    Spacer()
+                    Text(error)
+                        .foregroundStyle(.red)
+                }
             }
         }
         .formStyle(.grouped)

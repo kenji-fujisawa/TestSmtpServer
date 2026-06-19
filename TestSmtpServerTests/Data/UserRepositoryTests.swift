@@ -71,6 +71,22 @@ struct UserRepositoryTests {
         }
     }
     
+    @Test func testRegister_invalidName() async throws {
+        let source = DefaultLocalDataSource(context)
+        let hasher = FakePasswordHasher()
+        let repository = DefaultUserRepository(source, hasher)
+        
+        let pass = "pass"
+        
+        await #expect(throws: DefaultUserRepository.RegisterError.invalidName) {
+            try await repository.register(name: "", password: pass)
+        }
+        
+        await #expect(throws: DefaultUserRepository.RegisterError.invalidName) {
+            try await repository.register(name: "   ", password: pass)
+        }
+    }
+    
     @Test func testRegister_invalidPassword() async throws {
         let source = DefaultLocalDataSource(context)
         let hasher = FakePasswordHasher()

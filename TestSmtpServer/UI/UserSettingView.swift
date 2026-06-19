@@ -32,6 +32,13 @@ struct UserSettingView: View {
                     ProgressView()
                 }
             }
+            if let error = viewModel.addError {
+                HStack {
+                    Spacer()
+                    Text(error)
+                        .foregroundStyle(.red)
+                }
+            }
             VStack {
                 ScrollView {
                     List(viewModel.users, id: \.self, selection: $selected) { user in
@@ -42,6 +49,10 @@ struct UserSettingView: View {
                 }
                 HStack {
                     Spacer()
+                    if let error = viewModel.deleteError {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
                     Button("削除") {
                         if let user = selected {
                             viewModel.deleteUser(name: user)
