@@ -22,6 +22,25 @@ struct UserRepositoryTests {
         self.context = ModelContext(self.container)
     }
     
+    @Test func testGetUsers() async throws {
+        let source = DefaultLocalDataSource(context)
+        let hasher = FakePasswordHasher()
+        let repository = DefaultUserRepository(source, hasher)
+        
+        let users = [
+            User(name: "user1", password: "pass1"),
+            User(name: "user2", password: "pass2"),
+            User(name: "user3", password: "pass3")
+        ]
+        users.forEach { context.insert($0.asLocal()) }
+        
+        let results = try repository.getUsers()
+        #expect(results.count == 3)
+        #expect(results[0] == users[0])
+        #expect(results[1] == users[1])
+        #expect(results[2] == users[2])
+    }
+    
     @Test func testRegister() async throws {
         let source = DefaultLocalDataSource(context)
         let hasher = FakePasswordHasher()
@@ -63,6 +82,36 @@ struct UserRepositoryTests {
         await #expect(throws: DefaultUserRepository.RegisterError.invalidPassword) {
             try await repository.register(name: name, password: pass)
         }
+    }
+    
+    @Test func testUnregister() async throws {
+        let source = DefaultLocalDataSource(context)
+        let hasher = FakePasswordHasher()
+        let repository = DefaultUserRepository(source, hasher)
+        
+        let name = "name"
+        context.insert(LocalUser(name: name, password: ""))
+        
+        try repository.unregister(name: name)
+        
+        let results = try context.fetch(FetchDescriptor<LocalUser>())
+        #expect(results.count == 0)
+    }
+    
+    @Test func testUnregister_notfound() async throws {
+        let source = DefaultLocalDataSource(context)
+        let hasher = FakePasswordHasher()
+        let repository = DefaultUserRepository(source, hasher)
+        
+        let name = "name"
+        context.insert(LocalUser(name: name, password: ""))
+        
+        #expect(throws: DefaultUserRepository.UnregisterError.notFound) {
+            try repository.unregister(name: "bbb")
+        }
+        
+        let results = try context.fetch(FetchDescriptor<LocalUser>())
+        #expect(results.count == 1)
     }
     
     @Test func testAuthenticate() async throws {

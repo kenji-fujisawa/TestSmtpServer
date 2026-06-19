@@ -30,6 +30,17 @@ struct LocalDataSourceTests {
         ]
     }
     
+    @Test func testGetUsers() async throws {
+        users.forEach { context.insert($0.asLocal()) }
+        
+        let source = DefaultLocalDataSource(context)
+        let results = try source.getUsers()
+        #expect(results.count == 3)
+        #expect(results[0] == users[0])
+        #expect(results[1] == users[1])
+        #expect(results[2] == users[2])
+    }
+    
     @Test func testGetUser() async throws {
         users.forEach { context.insert($0.asLocal()) }
         

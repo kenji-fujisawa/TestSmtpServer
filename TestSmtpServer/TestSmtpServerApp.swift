@@ -52,12 +52,14 @@ struct TestSmtpServerApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.certificateRepository, certificateRepository)
+                .environment(\.userRepository, userRepository)
         }
     }
 }
 
 extension EnvironmentValues {
     @Entry var certificateRepository: CertificateRepository = FakeCertificateRepository()
+    @Entry var userRepository: UserRepository = FakeUserRepository()
 }
 
 private class FakeCertificateRepository: CertificateRepository {
@@ -66,6 +68,13 @@ private class FakeCertificateRepository: CertificateRepository {
     func save(password: String, forKey key: String) throws {}
     func load(forKey key: String, callback: (URL, String) -> Void) throws {}
     func remove(forKey key: String) throws {}
+}
+
+private class FakeUserRepository: UserRepository {
+    func getUsers() throws -> [User] { [] }
+    func register(name: String, password: String) async throws {}
+    func unregister(name: String) throws {}
+    func authenticate(name: String, password: String) async throws -> Bool { false }
 }
 
 private class FakeSecureDataSource: SecureDataSource {
@@ -86,23 +95,49 @@ private class FakeSecureDataSource: SecureDataSource {
 
 #if DEBUG
 struct UITestApp: App {
+    @State private var container: ModelContainer
     @State private var bookmarkSource: FileBookmarkDataSource
     @State private var secureSource: SecureDataSource
+    @State private var localSource: LocalDataSource
     @State private var certificateRepository: CertificateRepository
+    @State private var userRepository: UserRepository
     @State private var tmpText: String = ""
     
     init() {
-        let bookmarkSource = FakeBookmarkDataSource()
-        let secureSource = FakeSecureDataSource()
-        let certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
-        
-        self.bookmarkSource = bookmarkSource
-        self.secureSource = secureSource
-        self.certificateRepository = certificateRepository
+        do {
+            let schema = Schema(LocalUser.self)
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let container = try ModelContainer(for: schema, configurations: config)
+            
+            let bookmarkSource = FakeBookmarkDataSource()
+            let secureSource = FakeSecureDataSource()
+            let localSource = DefaultLocalDataSource(container.mainContext)
+            let hasher = Argon2PasswordHasher()
+            let certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
+            let userRepository = DefaultUserRepository(localSource, hasher)
+            
+            self.container = container
+            self.bookmarkSource = bookmarkSource
+            self.secureSource = secureSource
+            self.localSource = localSource
+            self.certificateRepository = certificateRepository
+            self.userRepository = userRepository
+        } catch {
+            fatalError()
+        }
         
         if CommandLine.arguments.contains("CertificateSettingView") {
             if CommandLine.arguments.contains("initialValue") {
                 try? certificateRepository.save(certificate: URL(filePath: "/aaa/bbb/ccc.pk12"), password: "pass", forKey: Constants.certificateKey)
+            }
+        } else if CommandLine.arguments.contains("UserSettingView") {
+            if CommandLine.arguments.contains("initialValue") {
+                let users = [
+                    LocalUser(name: "user1", password: "pass1"),
+                    LocalUser(name: "user2", password: "pass2"),
+                    LocalUser(name: "user3", password: "pass3")
+                ]
+                users.forEach { container.mainContext.insert($0) }
             }
         }
     }
@@ -118,6 +153,8 @@ struct UITestApp: App {
                         tmpText = text
                     }
                 }
+            } else if CommandLine.arguments.contains("UserSettingView") {
+                UserSettingView(viewModel: UserSettingViewModel(userRepository))
             }
         }
     }

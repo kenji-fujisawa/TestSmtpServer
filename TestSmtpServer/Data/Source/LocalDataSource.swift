@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 
 protocol LocalDataSource {
+    func getUsers() throws -> [User]
     func getUser(name: String) throws -> User?
     func insert(_ user: User) throws
     func update(_ user: User) throws
@@ -20,6 +21,13 @@ class DefaultLocalDataSource: LocalDataSource {
     
     init(_ context: ModelContext) {
         self.context = context
+    }
+    
+    func getUsers() throws -> [User] {
+        let descriptor = FetchDescriptor<LocalUser>(
+            sortBy: [.init(\.name)]
+        )
+        return try context.fetch(descriptor).map { $0.asUser() }
     }
     
     func getUser(name: String) throws -> User? {

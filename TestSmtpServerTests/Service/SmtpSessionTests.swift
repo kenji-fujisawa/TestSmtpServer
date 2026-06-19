@@ -539,7 +539,9 @@ struct SmtpSessionTests {
     }
     
     class FakeUserRepository: UserRepository {
+        func getUsers() throws -> [User] { [] }
         func register(name: String, password: String) async throws {}
+        func unregister(name: String) throws {}
         
         var name: String? = nil
         var password: String? = nil
