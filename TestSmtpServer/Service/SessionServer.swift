@@ -5,6 +5,7 @@
 //  Created by uhimania on 2026/06/16.
 //
 
+import Combine
 import Foundation
 import Socket
 import SSLService
@@ -13,6 +14,7 @@ class Logger {
     static let shared = Logger()
     
     private(set) var log: String = ""
+    private(set) var subject = PassthroughSubject<String, Never>()
     
     func log(_ msg: String, _ socket: Socket? = nil) {
         var msg = msg
@@ -20,6 +22,8 @@ class Logger {
             msg = "[\(socket.remoteHostname):\(socket.remotePort)] \(msg)"
         }
         log.append(msg + "\n")
+        
+        subject.send(log)
     }
     
     func log(_ error: Error, _ socket: Socket? = nil) {
@@ -34,6 +38,8 @@ class Logger {
             msg = "[\(socket.remoteHostname):\(socket.remotePort)] \(msg)"
         }
         log.append(msg + "\n")
+        
+        subject.send(log)
     }
 }
 

@@ -17,6 +17,7 @@ struct TestSmtpServerApp: App {
     private let container: ModelContainer
     private let certificateRepository: CertificateRepository
     private let userRepository: UserRepository
+    private let logRepository: LogRepository
     private let server: SessionServer<SmtpSession>
     
     init() {
@@ -45,6 +46,8 @@ struct TestSmtpServerApp: App {
         let passwordHasher = Argon2PasswordHasher()
         userRepository = DefaultUserRepository(localSource, passwordHasher)
         
+        logRepository = DefaultLogRepository(Logger.shared)
+        
         server = SessionServer<SmtpSession>(port: Constants.port, certificateRepository, userRepository)
     }
     
@@ -53,6 +56,7 @@ struct TestSmtpServerApp: App {
             ContentView()
                 .environment(\.certificateRepository, certificateRepository)
                 .environment(\.userRepository, userRepository)
+                .environment(\.logRepository, logRepository)
         }
     }
 }
@@ -60,6 +64,7 @@ struct TestSmtpServerApp: App {
 extension EnvironmentValues {
     @Entry var certificateRepository: CertificateRepository = FakeCertificateRepository()
     @Entry var userRepository: UserRepository = FakeUserRepository()
+    @Entry var logRepository: LogRepository = FakeLogRepository()
 }
 
 private class FakeCertificateRepository: CertificateRepository {
@@ -75,6 +80,11 @@ private class FakeUserRepository: UserRepository {
     func register(name: String, password: String) async throws {}
     func unregister(name: String) throws {}
     func authenticate(name: String, password: String) async throws -> Bool { false }
+}
+
+private class FakeLogRepository: LogRepository {
+    func getLogStream() -> AsyncStream<String> { AsyncStream { _ in } }
+    func getLog() -> String { "" }
 }
 
 private class FakeSecureDataSource: SecureDataSource {
@@ -101,6 +111,7 @@ struct UITestApp: App {
     @State private var localSource: LocalDataSource
     @State private var certificateRepository: CertificateRepository
     @State private var userRepository: UserRepository
+    @State private var logRepository: LogRepository
     @State private var tmpText: String = ""
     
     init() {
@@ -115,6 +126,7 @@ struct UITestApp: App {
             let hasher = Argon2PasswordHasher()
             let certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
             let userRepository = DefaultUserRepository(localSource, hasher)
+            let logRepository = DefaultLogRepository(Logger.shared)
             
             self.container = container
             self.bookmarkSource = bookmarkSource
@@ -122,6 +134,7 @@ struct UITestApp: App {
             self.localSource = localSource
             self.certificateRepository = certificateRepository
             self.userRepository = userRepository
+            self.logRepository = logRepository
         } catch {
             fatalError()
         }
@@ -152,6 +165,11 @@ struct UITestApp: App {
                     if let text = try? secureSource.load(forKey: Constants.certificateKey) {
                         tmpText = text
                     }
+                }
+            } else if CommandLine.arguments.contains("LogView") {
+                LogView(viewModel: LogViewModel(logRepository))
+                Button("add") {
+                    Logger.shared.log("aaa")
                 }
             } else if CommandLine.arguments.contains("UserSettingView") {
                 UserSettingView(viewModel: UserSettingViewModel(userRepository))
