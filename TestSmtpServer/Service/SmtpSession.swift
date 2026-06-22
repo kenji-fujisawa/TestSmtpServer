@@ -251,7 +251,7 @@ class SmtpSession: Session {
                 return
             }
         } catch {
-            Logger.shared.log(error)
+            await Logger.shared.log(error)
             response.code = 454
             response.args = ["Temporary authentication failure"]
             return

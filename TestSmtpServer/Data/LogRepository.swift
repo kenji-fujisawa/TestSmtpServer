@@ -5,12 +5,11 @@
 //  Created by uhimania on 2026/06/19.
 //
 
-import Combine
 import Foundation
 
 protocol LogRepository {
-    func getLogStream() -> AsyncStream<String>
-    func getLog() -> String
+    func getLogStream() async -> AsyncStream<String>
+    func getLog() async -> String
 }
 
 class DefaultLogRepository: LogRepository {
@@ -20,23 +19,11 @@ class DefaultLogRepository: LogRepository {
         self.logger = logger
     }
     
-    func getLogStream() -> AsyncStream<String> {
-        return AsyncStream { continuation in
-            if !logger.log.isEmpty {
-                continuation.yield(logger.log)
-            }
-            
-            let cancellable = logger.subject.sink { log in
-                continuation.yield(log)
-            }
-            
-            continuation.onTermination = { @Sendable _ in
-                cancellable.cancel()
-            }
-        }
+    func getLogStream() async -> AsyncStream<String> {
+        await logger.getLogStream()
     }
     
-    func getLog() -> String {
-        logger.log
+    func getLog() async -> String {
+        await logger.log
     }
 }

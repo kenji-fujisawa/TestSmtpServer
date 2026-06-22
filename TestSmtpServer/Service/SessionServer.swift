@@ -5,16 +5,15 @@
 //  Created by uhimania on 2026/06/16.
 //
 
-import Combine
 import Foundation
 import Socket
 import SSLService
 
-class Logger {
+actor Logger {
     static let shared = Logger()
     
     private(set) var log: String = ""
-    private(set) var subject = PassthroughSubject<String, Never>()
+    private var continuations: [UUID: AsyncStream<String>.Continuation] = [:]
     
     func log(_ msg: String, _ socket: Socket? = nil) {
         var msg = msg
@@ -23,7 +22,7 @@ class Logger {
         }
         log.append(msg + "\n")
         
-        subject.send(log)
+        continuations.values.forEach { $0.yield(log) }
     }
     
     func log(_ error: Error, _ socket: Socket? = nil) {
@@ -39,7 +38,27 @@ class Logger {
         }
         log.append(msg + "\n")
         
-        subject.send(log)
+        continuations.values.forEach { $0.yield(log) }
+    }
+    
+    func getLogStream() -> AsyncStream<String> {
+        AsyncStream { continuation in
+            if !log.isEmpty {
+                continuation.yield(log)
+            }
+            
+            let id = UUID()
+            continuations[id] = continuation
+            continuation.onTermination = { _ in
+                Task {
+                    await self.removeContinuation(forKey: id)
+                }
+            }
+        }
+    }
+    
+    private func removeContinuation(forKey key: UUID) {
+        continuations.removeValue(forKey: key)
     }
 }
 
@@ -73,7 +92,9 @@ class SessionServer<T: Session> {
                 do {
                     try switchToSSL(asServer: asServer, certificate: url, password: password)
                 } catch {
-                    Logger.shared.log(error, socket)
+                    Task {
+                        await Logger.shared.log(error, socket)
+                    }
                 }
             }
         }
@@ -99,13 +120,16 @@ class SessionServer<T: Session> {
         
         deinit {
             close()
-            Logger.shared.log("listener deinit")
+            
+            Task {
+                await Logger.shared.log("listener deinit")
+            }
         }
         
         func listen(on port: Int, onConnect: @escaping (Socket) async -> Void) {
             task = Task {
                 try await socket.socket.listen(on: port)
-                Logger.shared.log("start listening on port \(port)")
+                await Logger.shared.log("start listening on port \(port)")
                 
                 while !Task.isCancelled {
                     do {
@@ -121,7 +145,7 @@ class SessionServer<T: Session> {
                             break
                         }
                         
-                        Logger.shared.log(error)
+                        await Logger.shared.log(error)
                     }
                 }
             }
@@ -153,7 +177,11 @@ class SessionServer<T: Session> {
         
         deinit {
             close()
-            Logger.shared.log("connection #\(id) deinit")
+            
+            let copiedId = self.id
+            Task {
+                await Logger.shared.log("connection #\(copiedId) deinit")
+            }
         }
         
         func beginRead(onComplete: @escaping (Connection) async -> Void) {
@@ -172,19 +200,19 @@ class SessionServer<T: Session> {
                         var chunk = Data(capacity: 4096)
                         let length = try await socket.socket.read(into: &chunk)
                         if length == 0 {
-                            Logger.shared.log("no data received", await socket.socket)
+                            await Logger.shared.log("no data received", await socket.socket)
                             close()
                             break
                         }
                         
                         if let received = String(data: chunk, encoding: .utf8) {
-                            Logger.shared.log(received, await socket.socket)
+                            await Logger.shared.log(received, await socket.socket)
                         }
                         
                         let actions = await session.handle(chunk)
                         try await handleActions(actions)
                     } catch {
-                        Logger.shared.log(error, await socket.socket)
+                        await Logger.shared.log(error, await socket.socket)
                         close()
                         break
                     }
@@ -198,7 +226,7 @@ class SessionServer<T: Session> {
             for action in actions {
                 switch action {
                 case .write(let msg):
-                    Logger.shared.log("response: \(msg)", await socket.socket)
+                    await Logger.shared.log("response: \(msg)", await socket.socket)
                     try await socket.socket.write(from: msg)
                 case .startTLS:
                     try await socket.switchToSSL(asServer: true)
@@ -257,7 +285,7 @@ class SessionServer<T: Session> {
             self.listener = listener
             
             listener.listen(on: port) { newSocket in
-                Logger.shared.log("accepted connection", newSocket)
+                await Logger.shared.log("accepted connection", newSocket)
                 
                 let connection = Connection(newSocket, self.certificateRepository, self.dependency)
                 await self.connections.append(connection)
@@ -266,7 +294,9 @@ class SessionServer<T: Session> {
                 }
             }
         } catch {
-            Logger.shared.log(error)
+            Task {
+                await Logger.shared.log(error)
+            }
         }
     }
     

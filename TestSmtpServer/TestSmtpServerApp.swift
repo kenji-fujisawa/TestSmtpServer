@@ -169,7 +169,9 @@ struct UITestApp: App {
             } else if CommandLine.arguments.contains("LogView") {
                 LogView(viewModel: LogViewModel(logRepository))
                 Button("add") {
-                    Logger.shared.log("aaa")
+                    Task {
+                        await Logger.shared.log("aaa")
+                    }
                 }
             } else if CommandLine.arguments.contains("UserSettingView") {
                 UserSettingView(viewModel: UserSettingViewModel(userRepository))

@@ -30,7 +30,7 @@ struct LogViewModelTests {
     class FakeLogRepository: LogRepository {
         var continuation: AsyncStream<String>.Continuation? = nil
         func getLogStream() -> AsyncStream<String> {
-            return AsyncStream { continuation in
+            AsyncStream { continuation in
                 self.continuation = continuation
             }
         }

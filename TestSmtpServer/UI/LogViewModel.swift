@@ -17,10 +17,12 @@ class LogViewModel {
     init(_ logRepository: LogRepository) {
         self.logRepository = logRepository
         
-        let stream = logRepository.getLogStream()
-        task = Task { @MainActor [weak self] in
-            for await log in stream {
-                self?.log = log
+        Task {
+            let stream = await logRepository.getLogStream()
+            task = Task { @MainActor [weak self] in
+                for await log in stream {
+                    self?.log = log
+                }
             }
         }
     }
