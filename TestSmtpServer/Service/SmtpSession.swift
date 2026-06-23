@@ -7,8 +7,18 @@
 
 import Foundation
 
+struct SmtpDependencies {
+    let mailRepository: MailRepository
+    let userRepository: UserRepository
+    
+    init(_ mailRepository: MailRepository, _ userRepository: UserRepository) {
+        self.mailRepository = mailRepository
+        self.userRepository = userRepository
+    }
+}
+
 class SmtpSession: Session {
-    typealias Dependency = UserRepository
+    typealias Dependency = SmtpDependencies
     
     private enum State {
         case initial
@@ -55,17 +65,18 @@ class SmtpSession: Session {
     
     private static let bufferLimit = 4096 * 1000
     
+    private let mailRepository: MailRepository
     private let userRepository: UserRepository
     private var state: State = .initial
     private var response = Response()
     private var buffer = Data()
     private var mail = Mail()
-    private(set) var receivedMails: [Mail] = []
     private var ssl = false
     private var authorized = false
     
-    required init(_ dependency: UserRepository) {
-        self.userRepository = dependency
+    required init(_ dependency: SmtpDependencies) {
+        self.mailRepository = dependency.mailRepository
+        self.userRepository = dependency.userRepository
     }
     
     func onConnect() -> [SessionAction] {
@@ -122,7 +133,7 @@ class SmtpSession: Session {
         }
         
         if state == .data {
-            handleDataContent(line)
+            await handleDataContent(line)
             return
         }
         
@@ -351,12 +362,26 @@ class SmtpSession: Session {
         state = .data
     }
     
-    private func handleDataContent(_ line: String) {
+    private func handleDataContent(_ line: String) async {
         if line == "." {
+            do {
+                let mail = TestSmtpServer.Mail(
+                    from: self.mail.from,
+                    to: self.mail.to,
+                    body: self.mail.body,
+                    received: .now
+                )
+                try mailRepository.add(mail)
+            } catch {
+                await Logger.shared.log(error)
+                response.code = 451
+                response.args = ["Requested action aborted: local error in processing"]
+                return
+            }
+            
             response.code = 250
             response.args = ["OK"]
             state = .ready
-            receivedMails.append(mail)
             return
         }
         

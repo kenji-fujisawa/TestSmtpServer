@@ -32,16 +32,20 @@ struct SmtpSessionTests {
     }
     
     @Test func testOnConnect() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         let actions = session.onConnect()
         #expect(actions.count == 1)
         #expect(actions[0] == .write("220 Service ready\r\n"))
     }
     
     @Test func testHandle() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -61,8 +65,8 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
         
-        repository.name = "test"
-        repository.password = "1234"
+        userRepo.name = "test"
+        userRepo.password = "1234"
         
         msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -140,21 +144,24 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 2)
-        #expect(session.receivedMails[0].from == "aaa@test.com")
-        #expect(session.receivedMails[0].to.count == 1)
-        #expect(session.receivedMails[0].to[0] == "bbb@test.com")
-        #expect(session.receivedMails[0].body == "aaa\r\nbbb\r\n")
-        #expect(session.receivedMails[1].from == "aaa@test.jp")
-        #expect(session.receivedMails[1].to.count == 2)
-        #expect(session.receivedMails[1].to[0] == "bbb@test.jp")
-        #expect(session.receivedMails[1].to[1] == "ccc@test.jp")
-        #expect(session.receivedMails[1].body == "MAIL\r\nDATA\r\n.\r\n")
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 2)
+        #expect(mails[0].from == "aaa@test.com")
+        #expect(mails[0].to.count == 1)
+        #expect(mails[0].to[0] == "bbb@test.com")
+        #expect(mails[0].body == "aaa\r\nbbb\r\n")
+        #expect(mails[1].from == "aaa@test.jp")
+        #expect(mails[1].to.count == 2)
+        #expect(mails[1].to[0] == "bbb@test.jp")
+        #expect(mails[1].to[1] == "ccc@test.jp")
+        #expect(mails[1].body == "MAIL\r\nDATA\r\n.\r\n")
     }
     
     @Test func testHandle_notAuthorized() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "HELO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -182,12 +189,15 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 0)
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 0)
     }
     
     @Test func testHandle_authWithoutTLS() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -205,12 +215,15 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 0)
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 0)
     }
     
     @Test func testHandle_failAuthenticate() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -256,12 +269,15 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 0)
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 0)
     }
     
     @Test func testHandle_authWithoutParam() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -291,8 +307,8 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("501 Syntax error in parameters or arguments\r\n"))
         
-        repository.name = "test"
-        repository.password = "1234"
+        userRepo.name = "test"
+        userRepo.password = "1234"
         
         msg = "dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -305,12 +321,15 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 0)
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 0)
     }
     
     @Test func testHandle_badSequence() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -340,8 +359,8 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
         
-        repository.name = "test"
-        repository.password = "1234"
+        userRepo.name = "test"
+        userRepo.password = "1234"
         
         msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -389,12 +408,15 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 0)
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 0)
     }
     
     @Test func testHandle_invalidMailAddres() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -414,8 +436,8 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
         
-        repository.name = "test"
-        repository.password = "1234"
+        userRepo.name = "test"
+        userRepo.password = "1234"
         
         msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -468,12 +490,15 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 0)
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 0)
     }
     
     @Test func testHandleBuffer() async throws {
-        let repository = FakeUserRepository()
-        let session = SmtpSession(repository)
+        let mailRepo = FakeMailRepository()
+        let userRepo = FakeUserRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let session = SmtpSession(dependency)
         
         var msg = "EHLO".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
@@ -501,8 +526,8 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
         
-        repository.name = "test"
-        repository.password = "1234"
+        userRepo.name = "test"
+        userRepo.password = "1234"
         
         msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -531,11 +556,25 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("221 Service closing transmission channel\r\n"))
         #expect(actions[1] == .close)
         
-        #expect(session.receivedMails.count == 1)
-        #expect(session.receivedMails[0].from == "aaa@test.com")
-        #expect(session.receivedMails[0].to.count == 1)
-        #expect(session.receivedMails[0].to[0] == "bbb@test.com")
-        #expect(session.receivedMails[0].body == "aaa\r\nbbb\r\n")
+        let mails = try mailRepo.getMails()
+        #expect(mails.count == 1)
+        #expect(mails[0].from == "aaa@test.com")
+        #expect(mails[0].to.count == 1)
+        #expect(mails[0].to[0] == "bbb@test.com")
+        #expect(mails[0].body == "aaa\r\nbbb\r\n")
+    }
+    
+    class FakeMailRepository: MailRepository {
+        func getMailsStream() throws -> AsyncThrowingStream<[Mail], any Error> { AsyncThrowingStream { _ in } }
+        
+        private var mails: [Mail] = []
+        func getMails() throws -> [Mail] {
+            mails
+        }
+        
+        func add(_ mail: Mail) throws {
+            mails.append(mail)
+        }
     }
     
     class FakeUserRepository: UserRepository {

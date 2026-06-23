@@ -15,6 +15,7 @@ enum Constants {
 
 struct TestSmtpServerApp: App {
     private let container: ModelContainer
+    private let mailRepository: MailRepository
     private let certificateRepository: CertificateRepository
     private let userRepository: UserRepository
     private let logRepository: LogRepository
@@ -26,13 +27,16 @@ struct TestSmtpServerApp: App {
         #else
         let inMemory = false
         #endif
-        let schema = Schema(LocalUser.self)
+        let schema = Schema(LocalUser.self, LocalMail.self)
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
             container = try ModelContainer(for: schema, configurations: config)
         } catch {
             fatalError(error.localizedDescription)
         }
+        
+        let localSource = DefaultLocalDataSource(container.mainContext)
+        mailRepository = DefaultMailRepository(localSource)
         
         let bookmarkSource = UserDefaultsBookmarkDataSource()
         #if DEBUG
@@ -42,18 +46,19 @@ struct TestSmtpServerApp: App {
         #endif
         certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
         
-        let localSource = DefaultLocalDataSource(container.mainContext)
         let passwordHasher = Argon2PasswordHasher()
         userRepository = DefaultUserRepository(localSource, passwordHasher)
         
         logRepository = DefaultLogRepository(Logger.shared)
         
-        server = SessionServer<SmtpSession>(port: Constants.port, certificateRepository, userRepository)
+        let dependency = SmtpDependencies(mailRepository, userRepository)
+        server = SessionServer<SmtpSession>(port: Constants.port, certificateRepository, dependency)
     }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.mailRepository, mailRepository)
                 .environment(\.certificateRepository, certificateRepository)
                 .environment(\.userRepository, userRepository)
                 .environment(\.logRepository, logRepository)
@@ -62,9 +67,16 @@ struct TestSmtpServerApp: App {
 }
 
 extension EnvironmentValues {
+    @Entry var mailRepository: MailRepository = FakeMailRepository()
     @Entry var certificateRepository: CertificateRepository = FakeCertificateRepository()
     @Entry var userRepository: UserRepository = FakeUserRepository()
     @Entry var logRepository: LogRepository = FakeLogRepository()
+}
+
+private class FakeMailRepository: MailRepository {
+    func getMailsStream() throws -> AsyncThrowingStream<[Mail], any Error> { AsyncThrowingStream { _ in } }
+    func getMails() throws -> [Mail] { [] }
+    func add(_ mail: Mail) throws {}
 }
 
 private class FakeCertificateRepository: CertificateRepository {
@@ -109,6 +121,7 @@ struct UITestApp: App {
     @State private var bookmarkSource: FileBookmarkDataSource
     @State private var secureSource: SecureDataSource
     @State private var localSource: LocalDataSource
+    @State private var mailRepository: MailRepository
     @State private var certificateRepository: CertificateRepository
     @State private var userRepository: UserRepository
     @State private var logRepository: LogRepository
@@ -116,7 +129,7 @@ struct UITestApp: App {
     
     init() {
         do {
-            let schema = Schema(LocalUser.self)
+            let schema = Schema(LocalUser.self, LocalMail.self)
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             let container = try ModelContainer(for: schema, configurations: config)
             
@@ -124,6 +137,7 @@ struct UITestApp: App {
             let secureSource = FakeSecureDataSource()
             let localSource = DefaultLocalDataSource(container.mainContext)
             let hasher = Argon2PasswordHasher()
+            let mailRepository = DefaultMailRepository(localSource)
             let certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
             let userRepository = DefaultUserRepository(localSource, hasher)
             let logRepository = DefaultLogRepository(Logger.shared)
@@ -132,6 +146,7 @@ struct UITestApp: App {
             self.bookmarkSource = bookmarkSource
             self.secureSource = secureSource
             self.localSource = localSource
+            self.mailRepository = mailRepository
             self.certificateRepository = certificateRepository
             self.userRepository = userRepository
             self.logRepository = logRepository
@@ -139,7 +154,18 @@ struct UITestApp: App {
             fatalError()
         }
         
-        if CommandLine.arguments.contains("CertificateSettingView") {
+        if CommandLine.arguments.contains("MailView") {
+            if CommandLine.arguments.contains("initialValue") {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd HH:mm"
+                let mails = [
+                    LocalMail(from: "", to: [], body: "body1", received: formatter.date(from: "2026-06-23 12:00") ?? .now),
+                    LocalMail(from: "", to: [], body: "body2", received: formatter.date(from: "2026-06-23 11:30") ?? .now),
+                    LocalMail(from: "", to: [], body: "body3", received: formatter.date(from: "2026-06-23 11:00") ?? .now)
+                ]
+                mails.forEach { container.mainContext.insert($0) }
+            }
+        } else if CommandLine.arguments.contains("CertificateSettingView") {
             if CommandLine.arguments.contains("initialValue") {
                 try? certificateRepository.save(certificate: URL(filePath: "/aaa/bbb/ccc.pk12"), password: "pass", forKey: Constants.certificateKey)
             }
@@ -157,7 +183,15 @@ struct UITestApp: App {
     
     var body: some Scene {
         WindowGroup {
-            if CommandLine.arguments.contains("CertificateSettingView") {
+            if CommandLine.arguments.contains("MailView") {
+                MailView(viewModel: MailViewModel(mailRepository))
+                Button("add") {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm"
+                    let mail = Mail(from: "", to: [], body: "body", received: formatter.date(from: "2026-06-23 12:00") ?? .now)
+                    try? mailRepository.add(mail)
+                }
+            } else if CommandLine.arguments.contains("CertificateSettingView") {
                 CertificateSettingView(viewModel: CertificateSettingViewModel(certificateRepository), isUiTesting: true)
                 Text(tmpText)
                     .accessibilityIdentifier("check_password")

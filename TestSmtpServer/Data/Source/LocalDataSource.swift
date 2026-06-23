@@ -14,6 +14,11 @@ protocol LocalDataSource {
     func insert(_ user: User) throws
     func update(_ user: User) throws
     func delete(_ user: User) throws
+    
+    func getMails() throws -> [Mail]
+    func insert(_ mail: Mail) throws
+    func update(_ mail: Mail) throws
+    func delete(_ mail: Mail) throws
 }
 
 class DefaultLocalDataSource: LocalDataSource {
@@ -59,6 +64,42 @@ class DefaultLocalDataSource: LocalDataSource {
             try context.save()
         }
     }
+    
+    func getMails() throws -> [Mail] {
+        let descriptor = FetchDescriptor<LocalMail>(
+            sortBy: [.init(\.received, order: .reverse)]
+        )
+        return try context.fetch(descriptor).map { $0.asMail() }
+    }
+    
+    private func getLocalMail(id: UUID) throws -> LocalMail? {
+        let descriptor = FetchDescriptor<LocalMail>(
+            predicate: #Predicate { $0.id == id }
+        )
+        return try context.fetch(descriptor).first
+    }
+    
+    func insert(_ mail: Mail) throws {
+        context.insert(mail.asLocal())
+        try context.save()
+    }
+    
+    func update(_ mail: Mail) throws {
+        if let local = try getLocalMail(id: mail.id) {
+            local.from = mail.from
+            local.to = mail.to
+            local.body = mail.body
+            local.received = mail.received
+            try context.save()
+        }
+    }
+    
+    func delete(_ mail: Mail) throws {
+        if let local = try getLocalMail(id: mail.id) {
+            context.delete(local)
+            try context.save()
+        }
+    }
 }
 
 extension User {
@@ -75,6 +116,30 @@ extension LocalUser {
         User(
             name: self.name,
             password: self.password
+        )
+    }
+}
+
+extension Mail {
+    func asLocal() -> LocalMail {
+        LocalMail(
+            id: self.id,
+            from: self.from,
+            to: self.to,
+            body: self.body,
+            received: self.received
+        )
+    }
+}
+
+extension LocalMail {
+    func asMail() -> Mail {
+        Mail(
+            id: self.id,
+            from: self.from,
+            to: self.to,
+            body: self.body,
+            received: self.received
         )
     }
 }
