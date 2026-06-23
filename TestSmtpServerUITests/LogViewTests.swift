@@ -16,7 +16,7 @@ final class LogViewTests: XCTestCase {
     override func tearDownWithError() throws {
     }
 
-    func testExample() throws {
+    func testLogView() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-UITests", "LogView"]
         app.launch()
