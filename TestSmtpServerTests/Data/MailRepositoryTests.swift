@@ -32,6 +32,7 @@ struct MailRepositoryTests {
                 id: UUID(),
                 from: "from1@test.com",
                 to: ["to1@test.com"],
+                subject: "subject1",
                 body: "body1",
                 received: Date(timeIntervalSinceNow: 0)
             ),
@@ -39,6 +40,7 @@ struct MailRepositoryTests {
                 id: UUID(),
                 from: "from2@test.com",
                 to: ["to2_1@test.com", "to2_2@test.com"],
+                subject: "subject2",
                 body: "body2",
                 received: Date(timeIntervalSinceNow: -10)
             ),
@@ -46,6 +48,7 @@ struct MailRepositoryTests {
                 id: UUID(),
                 from: "from3@test.com",
                 to: ["to3_1@test.com", "to3_2@test.com", "to3_3@test.com"],
+                subject: "subject3",
                 body: "body3",
                 received: Date(timeIntervalSinceNow: -20)
             )
@@ -82,6 +85,7 @@ struct MailRepositoryTests {
                 id: UUID(),
                 from: "from1@test.com",
                 to: ["to1@test.com"],
+                subject: "subject1",
                 body: "body1",
                 received: Date(timeIntervalSinceNow: 0)
             ),
@@ -89,6 +93,7 @@ struct MailRepositoryTests {
                 id: UUID(),
                 from: "from2@test.com",
                 to: ["to2_1@test.com", "to2_2@test.com"],
+                subject: "subject2",
                 body: "body2",
                 received: Date(timeIntervalSinceNow: -10)
             ),
@@ -96,6 +101,7 @@ struct MailRepositoryTests {
                 id: UUID(),
                 from: "from3@test.com",
                 to: ["to3_1@test.com", "to3_2@test.com", "to3_3@test.com"],
+                subject: "subject3",
                 body: "body3",
                 received: Date(timeIntervalSinceNow: -20)
             )
@@ -117,6 +123,7 @@ struct MailRepositoryTests {
             id: UUID(),
             from: "from@test.com",
             to: ["to1@test.com", "to2@test.com"],
+            subject: "subject",
             body: "body",
             received: .now
         )

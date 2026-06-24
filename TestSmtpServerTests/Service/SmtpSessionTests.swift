@@ -31,6 +31,138 @@ struct SmtpSessionTests {
         #expect(res.args.isEmpty)
     }
     
+    @Test func testMailParse() async throws {
+        var mail = SmtpSession.Mail()
+        mail.data =
+            #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
+            #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
+            #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
+            "folded: aaa" + "\r\n" +
+            "   bbb ccc" + "\r\n" +
+            "tab_folded: aaa" + "\r\n" +
+            "\t \t bbb ccc" + "\r\n" +
+            "folded_in_comment: aaa (bbb" + "\r\n" +
+            "   ccc) ddd" + "\r\n" +
+            #"folded_in_quote: aaa "bbb"# + "\r\n" +
+            #"   ccc" ddd"# + "\r\n" +
+            "nested_comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
+            #"escaped_comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
+            #"quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
+            #"quoted_in_comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
+            "no_space_with_separator:aaa bbb ccc" + "\r\n" +
+            "multi_space_with_separator:   aaa bbb ccc" + "\r\n" +
+            "tab_with_separator:\t\taaa bbb ccc" + "\r\n" +
+            "trailing_space: aaa bbb ccc \t \t" + "\r\n" +
+            "duplicated_field: aaa bbb" + "\r\n" +
+            "duplicated_field: ccc ddd" + "\r\n" +
+            "\r\n" +
+            "\r\n" +
+            "body" + "\r\n" +
+            #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
+            #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
+            #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
+            "folded: aaa" + "\r\n" +
+            "   bbb ccc" + "\r\n" +
+            "tab_folded: aaa" + "\r\n" +
+            "\t \t bbb ccc" + "\r\n" +
+            "folded_in_comment: aaa (bbb" + "\r\n" +
+            "   ccc) ddd" + "\r\n" +
+            #"folded_in_quote: aaa "bbb"# + "\r\n" +
+            #"   ccc" ddd"# + "\r\n" +
+            "nested_comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
+            #"escaped_comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
+            #"quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
+            #"quoted_in_comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
+            "no_space_with_separator:aaa bbb ccc" + "\r\n" +
+            "multi_space_with_separator:   aaa bbb ccc" + "\r\n" +
+            "tab_with_separator:\t\taaa bbb ccc" + "\r\n" +
+            "trailing_space: aaa bbb ccc \t \t" + "\r\n" +
+            "duplicated_field: aaa bbb" + "\r\n" +
+            "duplicated_field: ccc ddd" + "\r\n" +
+            "\r\n" +
+            "end" + "\r\n"
+        
+        mail.parse()
+        
+        #expect(mail.header["QUOTED_PAIR"] == [#"aaa a b c ( ) " \ bbb"#])
+        #expect(mail.header["QUOTED_PAIR_IN_COMMENT"] == ["aaa  bbb"])
+        #expect(mail.header["QUOTED_PAIR_IN_QUOTE"] == [#"aaa a b c ( ) " \ bbb"#])
+        #expect(mail.header["FOLDED"] == ["aaa   bbb ccc"])
+        #expect(mail.header["TAB_FOLDED"] == ["aaa\t \t bbb ccc"])
+        #expect(mail.header["FOLDED_IN_COMMENT"] == ["aaa  ddd"])
+        #expect(mail.header["FOLDED_IN_QUOTE"] == ["aaa bbb   ccc ddd"])
+        #expect(mail.header["NESTED_COMMENT"] == ["aaa  eee"])
+        #expect(mail.header["ESCAPED_COMMENT"] == ["aaa (bbb)  eee"])
+        #expect(mail.header["QUOTED"] == [#"aaa bbb (ccc) "ddd" eee fff"#])
+        #expect(mail.header["QUOTED_IN_COMMENT"] == ["aaa  eee"])
+        #expect(mail.header["NO_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
+        #expect(mail.header["MULTI_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
+        #expect(mail.header["TAB_WITH_SEPARATOR"] == ["aaa bbb ccc"])
+        #expect(mail.header["TRAILING_SPACE"] == ["aaa bbb ccc \t \t"])
+        #expect(mail.header["DUPLICATED_FIELD"] == ["aaa bbb", "ccc ddd"])
+        
+        let expect =
+            "\r\n" +
+            "body" + "\r\n" +
+            #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
+            #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
+            #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
+            "folded: aaa" + "\r\n" +
+            "   bbb ccc" + "\r\n" +
+            "tab_folded: aaa" + "\r\n" +
+            "\t \t bbb ccc" + "\r\n" +
+            "folded_in_comment: aaa (bbb" + "\r\n" +
+            "   ccc) ddd" + "\r\n" +
+            #"folded_in_quote: aaa "bbb"# + "\r\n" +
+            #"   ccc" ddd"# + "\r\n" +
+            "nested_comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
+            #"escaped_comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
+            #"quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
+            #"quoted_in_comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
+            "no_space_with_separator:aaa bbb ccc" + "\r\n" +
+            "multi_space_with_separator:   aaa bbb ccc" + "\r\n" +
+            "tab_with_separator:\t\taaa bbb ccc" + "\r\n" +
+            "trailing_space: aaa bbb ccc \t \t" + "\r\n" +
+            "duplicated_field: aaa bbb" + "\r\n" +
+            "duplicated_field: ccc ddd" + "\r\n" +
+            "\r\n" +
+            "end" + "\r\n"
+        #expect(mail.body == expect)
+    }
+    
+    @Test func testMailParse_noHeader() async throws {
+        var mail = SmtpSession.Mail()
+        mail.data =
+            "\r\n" +
+            "\r\n" +
+            "body" + "\r\n"
+            
+        mail.parse()
+        
+        #expect(mail.header.isEmpty)
+        #expect(mail.body == "body" + "\r\n")
+    }
+    
+    @Test func testMailParse_noBody() async throws {
+        var mail = SmtpSession.Mail()
+        mail.data = "subject: test" + "\r\n"
+            
+        mail.parse()
+        
+        #expect(mail.header["SUBJECT"] == ["test"])
+        #expect(mail.body == "")
+    }
+    
+    @Test func testMailParse_empty() async throws {
+        var mail = SmtpSession.Mail()
+        mail.data = ""
+            
+        mail.parse()
+        
+        #expect(mail.header.isEmpty)
+        #expect(mail.body == "")
+    }
+    
     @Test func testOnConnect() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
@@ -88,6 +220,14 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("354 Start mail input; end with <CRLF>.<CRLF>\r\n"))
         
+        msg = "subject: test subject\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 0)
+        
+        msg = "\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 0)
+        
         msg = "aaa\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 0)
@@ -121,7 +261,7 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("354 Start mail input; end with <CRLF>.<CRLF>\r\n"))
         
-        msg = "MAIL\r\n".data(using: .utf8) ?? Data()
+        msg = "\r\n\r\nMAIL\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 0)
         
@@ -149,11 +289,13 @@ struct SmtpSessionTests {
         #expect(mails[0].from == "aaa@test.com")
         #expect(mails[0].to.count == 1)
         #expect(mails[0].to[0] == "bbb@test.com")
+        #expect(mails[0].subject == "test subject")
         #expect(mails[0].body == "aaa\r\nbbb\r\n")
         #expect(mails[1].from == "aaa@test.jp")
         #expect(mails[1].to.count == 2)
         #expect(mails[1].to[0] == "bbb@test.jp")
         #expect(mails[1].to[1] == "ccc@test.jp")
+        #expect(mails[1].subject == "")
         #expect(mails[1].body == "MAIL\r\nDATA\r\n.\r\n")
     }
     
@@ -540,7 +682,7 @@ struct SmtpSessionTests {
         #expect(actions[0] == .write("250 OK\r\n"))
         #expect(actions[1] == .write("250 OK\r\n"))
         
-        msg = "DATA\r\naaa\r\n".data(using: .utf8) ?? Data()
+        msg = "DATA\r\n\r\n\r\naaa\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
         #expect(actions[0] == .write("354 Start mail input; end with <CRLF>.<CRLF>\r\n"))
@@ -561,6 +703,7 @@ struct SmtpSessionTests {
         #expect(mails[0].from == "aaa@test.com")
         #expect(mails[0].to.count == 1)
         #expect(mails[0].to[0] == "bbb@test.com")
+        #expect(mails[0].subject == "")
         #expect(mails[0].body == "aaa\r\nbbb\r\n")
     }
     

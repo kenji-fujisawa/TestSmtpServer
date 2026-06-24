@@ -88,6 +88,7 @@ class DefaultLocalDataSource: LocalDataSource {
         if let local = try getLocalMail(id: mail.id) {
             local.from = mail.from
             local.to = mail.to
+            local.subject = mail.subject
             local.body = mail.body
             local.received = mail.received
             try context.save()
@@ -126,6 +127,7 @@ extension Mail {
             id: self.id,
             from: self.from,
             to: self.to,
+            subject: self.subject,
             body: self.body,
             received: self.received
         )
@@ -138,6 +140,7 @@ extension LocalMail {
             id: self.id,
             from: self.from,
             to: self.to,
+            subject: self.subject,
             body: self.body,
             received: self.received
         )

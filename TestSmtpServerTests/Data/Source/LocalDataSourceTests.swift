@@ -35,6 +35,7 @@ struct LocalDataSourceTests {
                 id: UUID(),
                 from: "from1@test.com",
                 to: ["to1@test.com"],
+                subject: "subject1",
                 body: "body1",
                 received: Date(timeIntervalSinceNow: 0)
             ),
@@ -42,6 +43,7 @@ struct LocalDataSourceTests {
                 id: UUID(),
                 from: "from2@test.com",
                 to: ["to2_1@test.com", "to2_2@test.com"],
+                subject: "subject2",
                 body: "body2",
                 received: Date(timeIntervalSinceNow: -10)
             ),
@@ -49,6 +51,7 @@ struct LocalDataSourceTests {
                 id: UUID(),
                 from: "from3@test.com",
                 to: ["to3_1@test.com", "to3_2@test.com", "to3_3@test.com"],
+                subject: "subject3",
                 body: "body3",
                 received: Date(timeIntervalSinceNow: -20)
             )
@@ -217,9 +220,11 @@ struct LocalDataSourceTests {
         
         #expect(results[0].from == "from3@test.com")
         #expect(results[0].to == [])
+        #expect(results[0].subject == "subject3")
         #expect(results[0].body == "body3")
         #expect(results[2].from == "from1@test.com")
         #expect(results[2].to == ["to1_1@test.com", "to1_2@test.com"])
+        #expect(results[2].subject == "subject1")
         #expect(results[2].body == "test")
     }
     

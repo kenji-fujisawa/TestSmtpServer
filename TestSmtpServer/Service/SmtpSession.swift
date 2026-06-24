@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RegexBuilder
 
 struct SmtpDependencies {
     let mailRepository: MailRepository
@@ -34,12 +35,99 @@ class SmtpSession: Session {
     struct Mail {
         var from: String = ""
         var to: [String] = []
+        var data: String = ""
+        var header: [String: [String]] = [:]
         var body: String = ""
         
         mutating func clear() {
             from = ""
             to = []
+            data = ""
+            header = [:]
             body = ""
+        }
+        
+        mutating func parse() {
+            let (header, body) = split()
+            self.header = parseHeader(unfold(header))
+            self.body = String(body)
+        }
+        
+        private func split() -> (String, String) {
+            let separator = "\r\n\r\n"
+            let parts = data.split(separator: separator, maxSplits: 1, omittingEmptySubsequences: false)
+            guard parts.count == 2 else { return (data, "") }
+            let header = String(parts[0] + "\r\n")
+            let body = String(parts[1])
+            return (header, body)
+        }
+        
+        private func unfold(_ header: String) -> String {
+            let regex = Regex {
+                "\r\n"
+                Lookahead {
+                    OneOrMore(.horizontalWhitespace)
+                }
+            }
+            return header.replacing(regex, with: "")
+        }
+        
+        private func parseHeader(_ header: String) -> [String: [String]] {
+            var results: [String: [String]] = [:]
+            
+            let lines = header.split(separator: "\r\n")
+            for line in lines {
+                let parts = line.split(separator: ":", maxSplits: 1)
+                guard parts.count == 2 else { continue }
+                let key = String(parts[0].uppercased())
+                let value = removeComment(trimLeadingSpace(String(parts[1])))
+                results[key, default: []].append(value)
+            }
+            
+            return results
+        }
+        
+        private func trimLeadingSpace(_ value: String) -> String {
+            let regex = Regex {
+                Anchor.startOfSubject
+                OneOrMore(.horizontalWhitespace)
+            }
+            return value.replacing(regex, with: "")
+        }
+        
+        private func removeComment(_ value: String) -> String {
+            var result = String()
+            result.reserveCapacity(value.count)
+            
+            var depth = 0
+            var escaped = false
+            var quoted = false
+            for char in value {
+                if escaped {
+                    if depth == 0 { result.append(char) }
+                    escaped = false
+                } else if char == "\\" {
+                    escaped = true
+                } else if quoted && char == "\"" {
+                    quoted = false
+                } else if quoted {
+                    result.append(char)
+                } else if depth > 0 && char == ")" {
+                    depth -= 1
+                } else if depth > 0 && char == "(" {
+                    depth += 1
+                } else if depth > 0 {
+                    continue
+                } else if char == "\"" {
+                    quoted = true
+                } else if char == "(" {
+                    depth = 1
+                } else {
+                    result.append(char)
+                }
+            }
+            
+            return result
         }
     }
     
@@ -364,10 +452,13 @@ class SmtpSession: Session {
     
     private func handleDataContent(_ line: String) async {
         if line == "." {
+            mail.parse()
+            
             do {
                 let mail = TestSmtpServer.Mail(
                     from: self.mail.from,
                     to: self.mail.to,
+                    subject: self.mail.header["SUBJECT"]?[0] ?? "",
                     body: self.mail.body,
                     received: .now
                 )
@@ -389,7 +480,7 @@ class SmtpSession: Session {
         if line.starts(with: "..") {
             line.removeFirst()
         }
-        mail.body.append(line + "\r\n")
+        mail.data.append(line + "\r\n")
     }
     
     private func handleRSET(_ line: String) {

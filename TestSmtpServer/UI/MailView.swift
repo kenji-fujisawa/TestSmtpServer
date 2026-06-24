@@ -15,8 +15,11 @@ struct MailView: View {
         NavigationSplitView {
             List(selection: $selected) {
                 ForEach(viewModel.mails, id: \.id) { mail in
-                    Text(mail.received, format: .dateTime.month().day().hour().minute())
-                        .tag(mail.id)
+                    VStack {
+                        Text(mail.received, format: .dateTime.month().day().hour().minute())
+                        Text(mail.subject)
+                    }
+                    .tag(mail.id)
                 }
             }
         } detail: {
@@ -40,18 +43,21 @@ private class FakeMailRepository: MailRepository {
                 Mail(
                     from: "from1@test.com",
                     to: ["to1@test.com"],
+                    subject: "subject1",
                     body: "body1",
                     received: Date(timeIntervalSinceNow: 0)
                 ),
                 Mail(
                     from: "from2@test.com",
                     to: ["to2_1@test.com", "to2_2@test.com"],
+                    subject: "subject2",
                     body: "body2",
                     received: Date(timeIntervalSinceNow: -10)
                 ),
                 Mail(
                     from: "from3@test.com",
                     to: ["to3_1@test.com", "to3_2@test.com", "to3_3@test.com"],
+                    subject: "subject3",
                     body: "body3",
                     received: Date(timeIntervalSinceNow: -20)
                 )
