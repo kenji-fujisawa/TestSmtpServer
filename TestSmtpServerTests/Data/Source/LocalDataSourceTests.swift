@@ -33,24 +33,41 @@ struct LocalDataSourceTests {
         self.mails = [
             Mail(
                 id: UUID(),
-                from: "from1@test.com",
-                to: ["to1@test.com"],
+                from: Mail.Address(name: "from1", address: "from1@test.com"),
+                to: [Mail.Address(name: "to1", address: "to1@test.com")],
+                cc: [Mail.Address(name: "cc1", address: "cc1@test.com")],
                 subject: "subject1",
                 body: "body1",
                 received: Date(timeIntervalSinceNow: 0)
             ),
             Mail(
                 id: UUID(),
-                from: "from2@test.com",
-                to: ["to2_1@test.com", "to2_2@test.com"],
+                from: Mail.Address(name: "from2", address: "from2@test.com"),
+                to: [
+                    Mail.Address(name: "to2_1", address: "to2_1@test.com"),
+                    Mail.Address(name: "to2_2", address: "to2_2@test.com")
+                ],
+                cc: [
+                    Mail.Address(name: "cc2_1", address: "cc2_1@test.com"),
+                    Mail.Address(name: "cc2_2", address: "cc2_2@test.com")
+                ],
                 subject: "subject2",
                 body: "body2",
                 received: Date(timeIntervalSinceNow: -10)
             ),
             Mail(
                 id: UUID(),
-                from: "from3@test.com",
-                to: ["to3_1@test.com", "to3_2@test.com", "to3_3@test.com"],
+                from: Mail.Address(name: "from3", address: "from3@test.com"),
+                to: [
+                    Mail.Address(name: "to3_1", address: "to3_1@test.com"),
+                    Mail.Address(name: "to3_2", address: "to3_2@test.com"),
+                    Mail.Address(name: "to3_3", address: "to3_3@test.com")
+                ],
+                cc: [
+                    Mail.Address(name: "cc3_1", address: "cc3_1@test.com"),
+                    Mail.Address(name: "cc3_2", address: "cc3_2@test.com"),
+                    Mail.Address(name: "cc3_3", address: "cc3_3@test.com")
+                ],
                 subject: "subject3",
                 body: "body3",
                 received: Date(timeIntervalSinceNow: -20)
@@ -194,7 +211,10 @@ struct LocalDataSourceTests {
         let mails = try source.getMails()
         
         var mail1 = mails[0]
-        mail1.to = ["to1_1@test.com", "to1_2@test.com"]
+        mail1.to = [
+            Mail.Address(name: "to1_1", address: "to1_1@test.com"),
+            Mail.Address(name: "to1_2", address: "to1_2@test.com")
+        ]
         mail1.body = "test"
         
         var mail2 = mails[2]
@@ -218,12 +238,20 @@ struct LocalDataSourceTests {
         #expect(results[1] == mails[1])
         #expect(results[2] == mail1)
         
-        #expect(results[0].from == "from3@test.com")
+        #expect(results[0].from?.name == "from3")
+        #expect(results[0].from?.address == "from3@test.com")
         #expect(results[0].to == [])
+        #expect(results[0].cc == mails[2].cc)
         #expect(results[0].subject == "subject3")
         #expect(results[0].body == "body3")
-        #expect(results[2].from == "from1@test.com")
-        #expect(results[2].to == ["to1_1@test.com", "to1_2@test.com"])
+        #expect(results[2].from?.name == "from1")
+        #expect(results[2].from?.address == "from1@test.com")
+        #expect(results[2].to.count == 2)
+        #expect(results[2].to[0].name == "to1_1")
+        #expect(results[2].to[0].address == "to1_1@test.com")
+        #expect(results[2].to[1].name == "to1_2")
+        #expect(results[2].to[1].address == "to1_2@test.com")
+        #expect(results[2].cc == mails[0].cc)
         #expect(results[2].subject == "subject1")
         #expect(results[2].body == "test")
     }
@@ -243,5 +271,21 @@ struct LocalDataSourceTests {
         #expect(results.count == 2)
         #expect(results[0] == mails[2])
         #expect(results[1] == mails[0])
+        
+        let addressDescriptor = FetchDescriptor<LocalMail.Address>(
+            sortBy: [.init(\.name)]
+        )
+        let addresses = try context.fetch(addressDescriptor).map { $0.asMail() }
+        #expect(addresses.count == 10)
+        #expect(addresses[0] == mails[0].cc[0])
+        #expect(addresses[1] == mails[2].cc[0])
+        #expect(addresses[2] == mails[2].cc[1])
+        #expect(addresses[3] == mails[2].cc[2])
+        #expect(addresses[4] == mails[0].from)
+        #expect(addresses[5] == mails[2].from)
+        #expect(addresses[6] == mails[0].to[0])
+        #expect(addresses[7] == mails[2].to[0])
+        #expect(addresses[8] == mails[2].to[1])
+        #expect(addresses[9] == mails[2].to[2])
     }
 }

@@ -159,9 +159,9 @@ struct UITestApp: App {
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd HH:mm"
                 let mails = [
-                    LocalMail(from: "", to: [], subject: "", body: "body1", received: formatter.date(from: "2026-06-23 12:00") ?? .now),
-                    LocalMail(from: "", to: [], subject: "", body: "body2", received: formatter.date(from: "2026-06-23 11:30") ?? .now),
-                    LocalMail(from: "", to: [], subject: "", body: "body3", received: formatter.date(from: "2026-06-23 11:00") ?? .now)
+                    LocalMail(body: "body1", received: formatter.date(from: "2026-06-23 12:00") ?? .now),
+                    LocalMail(body: "body2", received: formatter.date(from: "2026-06-23 11:30") ?? .now),
+                    LocalMail(body: "body3", received: formatter.date(from: "2026-06-23 11:00") ?? .now)
                 ]
                 mails.forEach { container.mainContext.insert($0) }
             }
@@ -188,7 +188,7 @@ struct UITestApp: App {
                 Button("add") {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "yyyy-MM-dd HH:mm"
-                    let mail = Mail(from: "", to: [], subject: "", body: "body", received: formatter.date(from: "2026-06-23 12:00") ?? .now)
+                    let mail = Mail(body: "body", received: formatter.date(from: "2026-06-23 12:00") ?? .now)
                     try? mailRepository.add(mail)
                 }
             } else if CommandLine.arguments.contains("CertificateSettingView") {

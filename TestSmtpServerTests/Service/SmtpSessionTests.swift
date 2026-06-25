@@ -31,9 +31,8 @@ struct SmtpSessionTests {
         #expect(res.args.isEmpty)
     }
     
-    @Test func testMailParse() async throws {
-        var mail = SmtpSession.Mail()
-        mail.data =
+    @Test func testParseData() async throws {
+        let data =
             #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
             #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
             #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
@@ -82,24 +81,25 @@ struct SmtpSessionTests {
             "\r\n" +
             "end" + "\r\n"
         
-        mail.parse()
+        let parser = SmtpParser()
+        let (header, body) = parser.parseData(data)
         
-        #expect(mail.header["QUOTED_PAIR"] == [#"aaa a b c ( ) " \ bbb"#])
-        #expect(mail.header["QUOTED_PAIR_IN_COMMENT"] == ["aaa  bbb"])
-        #expect(mail.header["QUOTED_PAIR_IN_QUOTE"] == [#"aaa a b c ( ) " \ bbb"#])
-        #expect(mail.header["FOLDED"] == ["aaa   bbb ccc"])
-        #expect(mail.header["TAB_FOLDED"] == ["aaa\t \t bbb ccc"])
-        #expect(mail.header["FOLDED_IN_COMMENT"] == ["aaa  ddd"])
-        #expect(mail.header["FOLDED_IN_QUOTE"] == ["aaa bbb   ccc ddd"])
-        #expect(mail.header["NESTED_COMMENT"] == ["aaa  eee"])
-        #expect(mail.header["ESCAPED_COMMENT"] == ["aaa (bbb)  eee"])
-        #expect(mail.header["QUOTED"] == [#"aaa bbb (ccc) "ddd" eee fff"#])
-        #expect(mail.header["QUOTED_IN_COMMENT"] == ["aaa  eee"])
-        #expect(mail.header["NO_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
-        #expect(mail.header["MULTI_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
-        #expect(mail.header["TAB_WITH_SEPARATOR"] == ["aaa bbb ccc"])
-        #expect(mail.header["TRAILING_SPACE"] == ["aaa bbb ccc \t \t"])
-        #expect(mail.header["DUPLICATED_FIELD"] == ["aaa bbb", "ccc ddd"])
+        #expect(header["QUOTED_PAIR"] == [#"aaa \a \b \c \( \) \" \\ bbb"#])
+        #expect(header["QUOTED_PAIR_IN_COMMENT"] == [#"aaa (\a \b \c \( \) \" \\) bbb"#])
+        #expect(header["QUOTED_PAIR_IN_QUOTE"] == [#"aaa "\a \b \c \( \) \" \\" bbb"#])
+        #expect(header["FOLDED"] == ["aaa   bbb ccc"])
+        #expect(header["TAB_FOLDED"] == ["aaa\t \t bbb ccc"])
+        #expect(header["FOLDED_IN_COMMENT"] == ["aaa (bbb   ccc) ddd"])
+        #expect(header["FOLDED_IN_QUOTE"] == [#"aaa "bbb   ccc" ddd"#])
+        #expect(header["NESTED_COMMENT"] == ["aaa (bbb (ccc (()ddd))) eee"])
+        #expect(header["ESCAPED_COMMENT"] == [#"aaa \(bbb\) (ccc \) ddd) eee"#])
+        #expect(header["QUOTED"] == [#"aaa "bbb (ccc) \"ddd\" eee" fff"#])
+        #expect(header["QUOTED_IN_COMMENT"] == [#"aaa (bbb "ccc" ddd) eee"#])
+        #expect(header["NO_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
+        #expect(header["MULTI_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
+        #expect(header["TAB_WITH_SEPARATOR"] == ["aaa bbb ccc"])
+        #expect(header["TRAILING_SPACE"] == ["aaa bbb ccc \t \t"])
+        #expect(header["DUPLICATED_FIELD"] == ["aaa bbb", "ccc ddd"])
         
         let expect =
             "\r\n" +
@@ -127,40 +127,159 @@ struct SmtpSessionTests {
             "duplicated_field: ccc ddd" + "\r\n" +
             "\r\n" +
             "end" + "\r\n"
-        #expect(mail.body == expect)
+        #expect(body == expect)
     }
     
-    @Test func testMailParse_noHeader() async throws {
-        var mail = SmtpSession.Mail()
-        mail.data =
+    @Test func testParseData_noHeader() async throws {
+        let data =
             "\r\n" +
             "\r\n" +
             "body" + "\r\n"
-            
-        mail.parse()
         
-        #expect(mail.header.isEmpty)
-        #expect(mail.body == "body" + "\r\n")
+        let parser = SmtpParser()
+        let (header, body) = parser.parseData(data)
+        
+        #expect(header.isEmpty)
+        #expect(body == "body" + "\r\n")
     }
     
-    @Test func testMailParse_noBody() async throws {
-        var mail = SmtpSession.Mail()
-        mail.data = "subject: test" + "\r\n"
-            
-        mail.parse()
+    @Test func testParseData_noBody() async throws {
+        let data = "subject: test" + "\r\n"
         
-        #expect(mail.header["SUBJECT"] == ["test"])
-        #expect(mail.body == "")
+        let parser = SmtpParser()
+        let (header, body) = parser.parseData(data)
+        
+        #expect(header["SUBJECT"] == ["test"])
+        #expect(body == "")
     }
     
-    @Test func testMailParse_empty() async throws {
-        var mail = SmtpSession.Mail()
-        mail.data = ""
-            
-        mail.parse()
+    @Test func testParseData_empty() async throws {
+        let data = ""
         
-        #expect(mail.header.isEmpty)
-        #expect(mail.body == "")
+        let parser = SmtpParser()
+        let (header, body) = parser.parseData(data)
+        
+        #expect(header.isEmpty)
+        #expect(body == "")
+    }
+    
+    @Test func testParseAddressList() async throws {
+        let list =
+            "aaa@test.com," +
+            "bbb <bbb@test.com>," +
+            "group1: ccc@test.com, ddd <ddd@test.com>;," +
+            "eee <eee@test.com>," +
+            "group2: fff <fff@test.com>;," +
+            "group3: ggg <ggg@test.com>;," +
+            "hhh@test.com," +
+            "iii <iii@test.com>"
+        
+        let parser = SmtpParser()
+        let result = parser.parseAddressList(list)
+        #expect(result.count == 8)
+        #expect(result[0].groupName == "")
+        #expect(result[0].group.count == 1)
+        #expect(result[0].group[0].name == "")
+        #expect(result[0].group[0].address == "aaa@test.com")
+        
+        #expect(result[1].groupName == "")
+        #expect(result[1].group.count == 1)
+        #expect(result[1].group[0].name == "bbb")
+        #expect(result[1].group[0].address == "bbb@test.com")
+        
+        #expect(result[2].groupName == "group1")
+        #expect(result[2].group.count == 2)
+        #expect(result[2].group[0].name == "")
+        #expect(result[2].group[0].address == "ccc@test.com")
+        #expect(result[2].group[1].name == "ddd")
+        #expect(result[2].group[1].address == "ddd@test.com")
+        
+        #expect(result[3].groupName == "")
+        #expect(result[3].group.count == 1)
+        #expect(result[3].group[0].name == "eee")
+        #expect(result[3].group[0].address == "eee@test.com")
+        
+        #expect(result[4].groupName == "group2")
+        #expect(result[4].group.count == 1)
+        #expect(result[4].group[0].name == "fff")
+        #expect(result[4].group[0].address == "fff@test.com")
+        
+        #expect(result[5].groupName == "group3")
+        #expect(result[5].group.count == 1)
+        #expect(result[5].group[0].name == "ggg")
+        #expect(result[5].group[0].address == "ggg@test.com")
+        
+        #expect(result[6].groupName == "")
+        #expect(result[6].group.count == 1)
+        #expect(result[6].group[0].name == "")
+        #expect(result[6].group[0].address == "hhh@test.com")
+        
+        #expect(result[7].groupName == "")
+        #expect(result[7].group.count == 1)
+        #expect(result[7].group[0].name == "iii")
+        #expect(result[7].group[0].address == "iii@test.com")
+    }
+    
+    @Test func testParseAddressList_group() async throws {
+        let list = "group1: aaa@test.com, bbb <bbb@test.com>;"
+        
+        let parser = SmtpParser()
+        let result = parser.parseAddressList(list)
+        #expect(result.count == 1)
+        #expect(result[0].groupName == "group1")
+        #expect(result[0].group.count == 2)
+        #expect(result[0].group[0].name == "")
+        #expect(result[0].group[0].address == "aaa@test.com")
+        #expect(result[0].group[1].name == "bbb")
+        #expect(result[0].group[1].address == "bbb@test.com")
+    }
+    
+    @Test func testParseAddressList_addressOnly() async throws {
+        let list = "aaa@test.com"
+        
+        let parser = SmtpParser()
+        let result = parser.parseAddressList(list)
+        #expect(result.count == 1)
+        #expect(result[0].groupName == "")
+        #expect(result[0].group.count == 1)
+        #expect(result[0].group[0].name == "")
+        #expect(result[0].group[0].address == "aaa@test.com")
+    }
+    
+    @Test func testParseAddressList_namedAddress() async throws {
+        let list = "aaa <aaa@test.com>"
+        
+        let parser = SmtpParser()
+        let result = parser.parseAddressList(list)
+        #expect(result.count == 1)
+        #expect(result[0].groupName == "")
+        #expect(result[0].group.count == 1)
+        #expect(result[0].group[0].name == "aaa")
+        #expect(result[0].group[0].address == "aaa@test.com")
+    }
+    
+    @Test func testParseAddressList_comment() async throws {
+        let list = #"aaa(bbb, (()ccc\) ddd)) <aaa(eee)@(fff)test.com>"#
+        
+        let parser = SmtpParser()
+        let result = parser.parseAddressList(list)
+        #expect(result.count == 1)
+        #expect(result[0].groupName == "")
+        #expect(result[0].group.count == 1)
+        #expect(result[0].group[0].name == #"aaa(bbb, (()ccc\) ddd))"#)
+        #expect(result[0].group[0].address == "aaa(eee)@(fff)test.com")
+    }
+    
+    @Test func testParseAddressList_quote() async throws {
+        let list = #"aaa "bbb, \"ccc\" ddd" eee <aaa"bbb"@test.com>"#
+        
+        let parser = SmtpParser()
+        let result = parser.parseAddressList(list)
+        #expect(result.count == 1)
+        #expect(result[0].groupName == "")
+        #expect(result[0].group.count == 1)
+        #expect(result[0].group[0].name == #"aaa "bbb, \"ccc\" ddd" eee"#)
+        #expect(result[0].group[0].address == #"aaa"bbb"@test.com"#)
     }
     
     @Test func testOnConnect() async throws {
@@ -219,6 +338,18 @@ struct SmtpSessionTests {
         actions = await session.handle(msg)
         #expect(actions.count == 1)
         #expect(actions[0] == .write("354 Start mail input; end with <CRLF>.<CRLF>\r\n"))
+        
+        msg = "from: from<from@test.com>\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 0)
+        
+        msg = "to: to1<to1@test.com>, to2<to2@test.com>\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 0)
+        
+        msg = "cc: cc<cc@test.com>\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 0)
         
         msg = "subject: test subject\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -286,15 +417,21 @@ struct SmtpSessionTests {
         
         let mails = try mailRepo.getMails()
         #expect(mails.count == 2)
-        #expect(mails[0].from == "aaa@test.com")
-        #expect(mails[0].to.count == 1)
-        #expect(mails[0].to[0] == "bbb@test.com")
+        #expect(mails[0].from?.name == "from")
+        #expect(mails[0].from?.address == "from@test.com")
+        #expect(mails[0].to.count == 2)
+        #expect(mails[0].to[0].name == "to1")
+        #expect(mails[0].to[0].address == "to1@test.com")
+        #expect(mails[0].to[1].name == "to2")
+        #expect(mails[0].to[1].address == "to2@test.com")
+        #expect(mails[0].cc.count == 1)
+        #expect(mails[0].cc[0].name == "cc")
+        #expect(mails[0].cc[0].address == "cc@test.com")
         #expect(mails[0].subject == "test subject")
         #expect(mails[0].body == "aaa\r\nbbb\r\n")
-        #expect(mails[1].from == "aaa@test.jp")
-        #expect(mails[1].to.count == 2)
-        #expect(mails[1].to[0] == "bbb@test.jp")
-        #expect(mails[1].to[1] == "ccc@test.jp")
+        #expect(mails[1].from == nil)
+        #expect(mails[1].to.count == 0)
+        #expect(mails[1].cc.count == 0)
         #expect(mails[1].subject == "")
         #expect(mails[1].body == "MAIL\r\nDATA\r\n.\r\n")
     }
@@ -626,6 +763,16 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 OK\r\n"))
         
+        msg = "RCPT TO:<Postmaster>\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 1)
+        #expect(actions[0] == .write("250 OK\r\n"))
+        
+        msg = "RCPT TO:<Postmaster@test.com>\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 1)
+        #expect(actions[0] == .write("250 OK\r\n"))
+        
         msg = "QUIT\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 2)
@@ -700,9 +847,9 @@ struct SmtpSessionTests {
         
         let mails = try mailRepo.getMails()
         #expect(mails.count == 1)
-        #expect(mails[0].from == "aaa@test.com")
-        #expect(mails[0].to.count == 1)
-        #expect(mails[0].to[0] == "bbb@test.com")
+        #expect(mails[0].from == nil)
+        #expect(mails[0].to.count == 0)
+        #expect(mails[0].cc.count == 0)
         #expect(mails[0].subject == "")
         #expect(mails[0].body == "aaa\r\nbbb\r\n")
     }

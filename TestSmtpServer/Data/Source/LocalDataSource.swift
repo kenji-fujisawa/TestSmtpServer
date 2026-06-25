@@ -86,8 +86,9 @@ class DefaultLocalDataSource: LocalDataSource {
     
     func update(_ mail: Mail) throws {
         if let local = try getLocalMail(id: mail.id) {
-            local.from = mail.from
-            local.to = mail.to
+            local.from = mail.from?.asLocal()
+            local.to = mail.to.map { $0.asLocal() }
+            local.cc = mail.cc.map { $0.asLocal() }
             local.subject = mail.subject
             local.body = mail.body
             local.received = mail.received
@@ -125,11 +126,21 @@ extension Mail {
     func asLocal() -> LocalMail {
         LocalMail(
             id: self.id,
-            from: self.from,
-            to: self.to,
+            from: self.from?.asLocal(),
+            to: self.to.map { $0.asLocal() },
+            cc: self.cc.map { $0.asLocal() },
             subject: self.subject,
             body: self.body,
             received: self.received
+        )
+    }
+}
+
+extension Mail.Address {
+    func asLocal() -> LocalMail.Address {
+        LocalMail.Address(
+            name: self.name,
+            address: self.address
         )
     }
 }
@@ -138,11 +149,25 @@ extension LocalMail {
     func asMail() -> Mail {
         Mail(
             id: self.id,
-            from: self.from,
-            to: self.to,
+            from: self.from?.asMail(),
+            to: self.to
+                .sorted { $0.address < $1.address }
+                .map { $0.asMail() },
+            cc: self.cc
+                .sorted { $0.address < $1.address }
+                .map { $0.asMail() },
             subject: self.subject,
             body: self.body,
             received: self.received
+        )
+    }
+}
+
+extension LocalMail.Address {
+    func asMail() -> Mail.Address {
+        Mail.Address(
+            name: self.name,
+            address: self.address
         )
     }
 }
