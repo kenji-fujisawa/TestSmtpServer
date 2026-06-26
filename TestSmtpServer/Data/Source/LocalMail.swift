@@ -30,20 +30,28 @@ extension TestSmtpServerSchema_v1 {
         #Index<Mail_v1>([\.id], [\.received])
         
         var id: UUID
+        var mail: String
+        var rcpt: [String]
+        var data: String
         @Relationship(deleteRule: .cascade, inverse: \Address_v1.from) var from: Address_v1?
         @Relationship(deleteRule: .cascade, inverse: \Address_v1.to) var to: [Address_v1]
         @Relationship(deleteRule: .cascade, inverse: \Address_v1.cc) var cc: [Address_v1]
         var subject: String
         var body: String
-        var received: Date
+        var sent: Date?
+        var received: Date?
         
-        init(id: UUID = UUID(), from: Address_v1? = nil, to: [Address_v1] = [], cc: [Address_v1] = [], subject: String = "", body: String = "", received: Date = .now) {
+        init(id: UUID = UUID(), mail: String = "", rcpt: [String] = [], data: String = "", from: Address_v1? = nil, to: [Address_v1] = [], cc: [Address_v1] = [], subject: String = "", body: String = "", sent: Date? = nil, received: Date? = nil) {
             self.id = id
+            self.mail = mail
+            self.rcpt = rcpt
+            self.data = data
             self.from = from
             self.to = to
             self.cc = cc
             self.subject = subject
             self.body = body
+            self.sent = sent
             self.received = received
         }
     }

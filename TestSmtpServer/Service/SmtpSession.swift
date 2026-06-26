@@ -33,13 +33,13 @@ class SmtpSession: Session {
     }
     
     struct Mail {
-        var from: String = ""
-        var to: [String] = []
+        var mail: String = ""
+        var rcpt: [String] = []
         var data: String = ""
         
         mutating func clear() {
-            from = ""
-            to = []
+            mail = ""
+            rcpt = []
             data = ""
         }
     }
@@ -305,10 +305,13 @@ class SmtpSession: Session {
         
         mail.clear()
         
+        var index = line.firstIndex(of: " ") ?? line.startIndex
+        index = line.index(index, offsetBy: 1)
+        
         response.code = 250
         response.args = ["OK"]
         state = .mail
-        mail.from = address
+        mail.mail = String(line[index...])
     }
     
     private func handleRCPT(_ line: String) {
@@ -339,10 +342,13 @@ class SmtpSession: Session {
             return
         }
         
+        var index = line.firstIndex(of: " ") ?? line.startIndex
+        index = line.index(index, offsetBy: 1)
+        
         response.code = 250
         response.args = ["OK"]
         state = .rcpt
-        mail.to.append(address)
+        mail.rcpt.append(String(line[index...]))
     }
     
     private func handleDATA(_ line: String) {
@@ -384,14 +390,19 @@ class SmtpSession: Session {
                 .flatMap { $0.group }
                 .map { toAddress($0.name, $0.address) }
             let subject = SmtpParser.shared.removeCommentAndQuote(header["SUBJECT"]?[0] ?? "")
+            let sent = SmtpParser.shared.parseDateTime(SmtpParser.shared.removeCommentAndQuote(header["DATE"]?[0] ?? ""))
             
             do {
                 let mail = TestSmtpServer.Mail(
+                    mail: self.mail.mail,
+                    rcpt: self.mail.rcpt,
+                    data: self.mail.data,
                     from: from,
                     to: to,
                     cc: cc,
                     subject: subject,
                     body: body,
+                    sent: sent,
                     received: .now
                 )
                 try mailRepository.add(mail)
@@ -623,5 +634,30 @@ class SmtpParser {
         let address = namedAddress[begin..<end].trimmingCharacters(in: .whitespaces)
         
         return (name, address)
+    }
+    
+    func parseDateTime(_ value: String) -> Date? {
+        let value = value
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        
+        let candidates = [
+            "EEE, d MMM yyyy HH:mm:ss Z",
+            "EEE, d MMM yyyy HH:mm Z",
+            "d MMM yyyy HH:mm:ss Z",
+            "d MMM yyyy HH:mm Z"
+        ]
+        
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        
+        for candidate in candidates {
+            formatter.dateFormat = candidate
+            if let date = formatter.date(from: value) {
+                return date
+            }
+        }
+        
+        return nil
     }
 }

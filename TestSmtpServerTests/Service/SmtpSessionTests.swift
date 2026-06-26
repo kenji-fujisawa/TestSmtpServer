@@ -282,6 +282,33 @@ struct SmtpSessionTests {
         #expect(result[0].group[0].address == #"aaa"bbb"@test.com"#)
     }
     
+    @Test func testParseDateTime() async throws {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        
+        let parser = SmtpParser()
+        var date = parser.parseDateTime("Fri, 26 Jun 2026 11:30:50 +0900")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
+        
+        date = parser.parseDateTime("26 Jun 2026 11:30 +0900")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:00")
+        
+        date = parser.parseDateTime("1 Jun 2026 11:30 +0900")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-01 11:30:00")
+        
+        date = parser.parseDateTime("01 Jun 2026 11:30 +0900")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-01 11:30:00")
+        
+        date = parser.parseDateTime("Fri, 26 Jun 2026 11:30:50 +0000")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 20:30:50")
+        
+        date = parser.parseDateTime("Fri, 26 Jun 2026 11:30:50 +09:00")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
+        
+        date = parser.parseDateTime("   Fri,    26     Jun     2026    11:30:50    +0900   ")
+        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
+    }
+    
     @Test func testOnConnect() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
@@ -351,6 +378,10 @@ struct SmtpSessionTests {
         actions = await session.handle(msg)
         #expect(actions.count == 0)
         
+        msg = "date: Fri, 26 Jun 2026 14:20:30 +0900\r\n".data(using: .utf8) ?? Data()
+        actions = await session.handle(msg)
+        #expect(actions.count == 0)
+        
         msg = "subject: test subject\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 0)
@@ -382,7 +413,7 @@ struct SmtpSessionTests {
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 OK\r\n"))
         
-        msg = "RCPT TO:<ccc@test.jp>\r\n".data(using: .utf8) ?? Data()
+        msg = "RCPT TO:<ccc@test.jp> NOTIFY=SUCCESS,DELAY\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
         #expect(actions[0] == .write("250 OK\r\n"))
@@ -417,6 +448,18 @@ struct SmtpSessionTests {
         
         let mails = try mailRepo.getMails()
         #expect(mails.count == 2)
+        #expect(mails[0].mail == "FROM:<aaa@test.com>")
+        #expect(mails[0].rcpt == ["TO:<bbb@test.com>"])
+        #expect(mails[0].data == """
+            from: from<from@test.com>\r\n\
+            to: to1<to1@test.com>, to2<to2@test.com>\r\n\
+            cc: cc<cc@test.com>\r\n\
+            date: Fri, 26 Jun 2026 14:20:30 +0900\r\n\
+            subject: test subject\r\n\
+            \r\n\
+            aaa\r\n\
+            bbb\r\n
+            """)
         #expect(mails[0].from?.name == "from")
         #expect(mails[0].from?.address == "from@test.com")
         #expect(mails[0].to.count == 2)
@@ -429,11 +472,24 @@ struct SmtpSessionTests {
         #expect(mails[0].cc[0].address == "cc@test.com")
         #expect(mails[0].subject == "test subject")
         #expect(mails[0].body == "aaa\r\nbbb\r\n")
+        #expect(mails[0].sent?.equals("2026-06-26 14:20:30") == true)
+        #expect(mails[0].received?.equals(.now) == true)
+        #expect(mails[1].mail == "FROM:<aaa@test.jp>")
+        #expect(mails[1].rcpt == ["TO:<bbb@test.jp>", "TO:<ccc@test.jp> NOTIFY=SUCCESS,DELAY"])
+        #expect(mails[1].data == """
+            \r\n\
+            \r\n\
+            MAIL\r\n\
+            DATA\r\n\
+            .\r\n
+            """)
         #expect(mails[1].from == nil)
         #expect(mails[1].to.count == 0)
         #expect(mails[1].cc.count == 0)
         #expect(mails[1].subject == "")
         #expect(mails[1].body == "MAIL\r\nDATA\r\n.\r\n")
+        #expect(mails[1].sent == nil)
+        #expect(mails[1].received?.equals(.now) == true)
     }
     
     @Test func testHandle_notAuthorized() async throws {
@@ -847,11 +903,21 @@ struct SmtpSessionTests {
         
         let mails = try mailRepo.getMails()
         #expect(mails.count == 1)
+        #expect(mails[0].mail == "FROM:<aaa@test.com>")
+        #expect(mails[0].rcpt == ["TO:<bbb@test.com>"])
+        #expect(mails[0].data == """
+            \r\n\
+            \r\n\
+            aaa\r\n\
+            bbb\r\n
+            """)
         #expect(mails[0].from == nil)
         #expect(mails[0].to.count == 0)
         #expect(mails[0].cc.count == 0)
         #expect(mails[0].subject == "")
         #expect(mails[0].body == "aaa\r\nbbb\r\n")
+        #expect(mails[0].sent == nil)
+        #expect(mails[0].received?.equals(.now) == true)
     }
     
     class FakeMailRepository: MailRepository {
@@ -877,5 +943,18 @@ struct SmtpSessionTests {
         func authenticate(name: String, password: String) async throws -> Bool {
             self.name == name && self.password == password
         }
+    }
+}
+
+private extension Date {
+    func equals(_ date: Date) -> Bool {
+        abs(self.distance(to: date)) < 1
+    }
+    
+    func equals(_ text: String) -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        guard let date = formatter.date(from: text) else { return false }
+        return self.equals(date)
     }
 }

@@ -10,45 +10,182 @@ import SwiftUI
 struct MailView: View {
     let viewModel: MailViewModel
     @State private var selected: UUID? = nil
+    @State private var rawData: Bool = false
     
     var body: some View {
         NavigationSplitView {
             List(selection: $selected) {
                 ForEach(viewModel.mails, id: \.id) { mail in
-                    VStack {
-                        Text(mail.received, format: .dateTime.month().day().hour().minute())
-                        Text(mail.subject)
-                    }
-                    .tag(mail.id)
+                    SidebarItem(mail: mail)
+                        .tag(mail.id)
                 }
             }
         } detail: {
+            HStack {
+                Spacer()
+                Toggle(isOn: $rawData) {
+                    Text("RawData")
+                }
+                .toggleStyle(.switch)
+                .padding([.top, .horizontal])
+            }
+            
             if let mail = viewModel.mails.first(where: { $0.id == selected }) {
-                VStack {
-                    HStack {
-                        Text("from: ")
-                        Text(mail.from?.name ?? "")
-                        Text("<\(mail.from?.address ?? "")>")
+                if rawData {
+                    RawDataView(mail: mail)
+                        .padding()
+                } else {
+                    MailView(mail: mail)
+                        .padding()
+                }
+            }
+            
+            Spacer()
+            
+            if let error = viewModel.error {
+                HStack {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.red)
+                    Text(error)
+                        .foregroundStyle(.black)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(4)
+                .background(Color(red: 255/255, green: 228/255, blue: 222/255))
+                .clipShape(.buttonBorder)
+                .padding()
+            }
+        }
+    }
+    
+    private struct SidebarItem: View {
+        let mail: Mail
+        
+        var body: some View {
+            VStack(alignment: .leading) {
+                HStack {
+                    Text(mail.from?.displayName ?? "")
+                    Spacer()
+                    if let received = mail.received {
+                        Text(received, format: .mail)
+                            .foregroundStyle(.tertiary)
                     }
-                    ForEach(mail.to, id: \.address) { to in
-                        HStack {
-                            Text("to: ")
-                            Text(to.name)
-                            Text("<\(to.address)>")
-                        }
-                    }
-                    ForEach(mail.cc, id: \.address) { cc in
-                        HStack {
-                            Text("cc: ")
-                            Text(cc.name)
-                            Text("<\(cc.address)>")
-                        }
-                    }
+                }
+                Text(mail.subject)
+                    .foregroundStyle(.secondary)
+                Text(mail.body)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+    
+    private struct MailView: View {
+        let mail: Mail
+        
+        var body: some View {
+            VStack {
+                Header(mail: mail)
+                
+                Divider()
+                
+                ScrollView {
                     Text(mail.body)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Spacer()
+            }
+        }
+    }
+    
+    private struct Header: View {
+        let mail: Mail
+        
+        var body: some View {
+            VStack(alignment: .leading) {
+                HStack {
+                    Text(mail.from?.displayName ?? "")
+                        .bold()
+                    Spacer()
+                    if let received = mail.received {
+                        Text(received, format: .mail)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                Text(mail.subject)
+                if !mail.to.isEmpty {
+                    HStack {
+                        Text("宛先: ")
+                        Text(mail.to.map { $0.displayName }.joined(separator: ", "))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if !mail.cc.isEmpty {
+                    HStack {
+                        Text("cc: ")
+                        Text(mail.cc.map { $0.displayName }.joined(separator: ", "))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
     }
+    
+    private struct RawDataView: View {
+        let mail: Mail
+        
+        var body: some View {
+            ScrollView {
+                VStack(alignment: .leading) {
+                    HStack(alignment: .top) {
+                        Text("MAIL: ")
+                        Text(mail.mail)
+                    }
+                    HStack(alignment: .top) {
+                        Text("RCPT: ")
+                        VStack {
+                            ForEach (mail.rcpt, id: \.self) { rcpt in
+                                Text(rcpt)
+                            }
+                        }
+                    }
+                    HStack(alignment: .top) {
+                        Text("DATA: ")
+                        Text(mail.data)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+private extension Mail.Address {
+    var displayName: String {
+        name.isEmpty ? address : name
+    }
+}
+
+private extension Date {
+    struct MailFormatStyle: Foundation.FormatStyle {
+        func format(_ value: Date) -> String {
+            if Calendar.current.isDateInToday(value) {
+                return value.formatted(.dateTime.hour().minute())
+            } else {
+                let components = Calendar.current.dateComponents([.day], from: value, to: .now)
+                if let difference = components.day,
+                   difference >= 0 && difference <= 2 {
+                    return value.formatted(.relative(presentation: .named))
+                } else {
+                    return value.formatted(.dateTime.year().month().day())
+                }
+            }
+        }
+    }
+}
+
+private extension FormatStyle where Self == Date.MailFormatStyle {
+    static var mail: Self { .init() }
 }
 
 #Preview {
@@ -62,14 +199,21 @@ private class FakeMailRepository: MailRepository {
         AsyncThrowingStream { continuation in
             let mails = [
                 Mail(
+                    mail: "mail1",
+                    rcpt: ["rcpt1"],
+                    data: "data1",
                     from: Mail.Address(name: "from1", address: "from1@test.com"),
                     to: [Mail.Address(name: "to1", address: "to1@test.com")],
                     cc: [Mail.Address(name: "cc1", address: "cc1@test.com")],
                     subject: "subject1",
                     body: "body1",
+                    sent: Date(timeIntervalSinceNow: -10),
                     received: Date(timeIntervalSinceNow: 0)
                 ),
                 Mail(
+                    mail: "mail2",
+                    rcpt: ["rcpt2_1", "rcpt2_2"],
+                    data: "data2",
                     from: Mail.Address(name: "from2", address: "from2@test.com"),
                     to: [
                         Mail.Address(name: "to2_1", address: "to2_1@test.com"),
@@ -81,9 +225,13 @@ private class FakeMailRepository: MailRepository {
                     ],
                     subject: "subject2",
                     body: "body2",
+                    sent: Date(timeIntervalSinceNow: -20),
                     received: Date(timeIntervalSinceNow: -10)
                 ),
                 Mail(
+                    mail: "mail3",
+                    rcpt: ["rcpt3_1", "rcpt3_2", "rcpt3_3"],
+                    data: "data3",
                     from: Mail.Address(name: "from3", address: "from3@test.com"),
                     to: [
                         Mail.Address(name: "to3_1", address: "to3_1@test.com"),
@@ -97,6 +245,7 @@ private class FakeMailRepository: MailRepository {
                     ],
                     subject: "subject3",
                     body: "body3",
+                    sent: Date(timeIntervalSinceNow: -30),
                     received: Date(timeIntervalSinceNow: -20)
                 )
             ]

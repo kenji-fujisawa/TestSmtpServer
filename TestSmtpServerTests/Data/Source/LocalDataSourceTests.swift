@@ -33,15 +33,22 @@ struct LocalDataSourceTests {
         self.mails = [
             Mail(
                 id: UUID(),
+                mail: "mail1",
+                rcpt: ["rcpt1"],
+                data: "data1",
                 from: Mail.Address(name: "from1", address: "from1@test.com"),
                 to: [Mail.Address(name: "to1", address: "to1@test.com")],
                 cc: [Mail.Address(name: "cc1", address: "cc1@test.com")],
                 subject: "subject1",
                 body: "body1",
+                sent: Date(timeIntervalSinceNow: -10),
                 received: Date(timeIntervalSinceNow: 0)
             ),
             Mail(
                 id: UUID(),
+                mail: "mail2",
+                rcpt: ["rcpt2_1", "rcpt2_2"],
+                data: "data2",
                 from: Mail.Address(name: "from2", address: "from2@test.com"),
                 to: [
                     Mail.Address(name: "to2_1", address: "to2_1@test.com"),
@@ -53,10 +60,14 @@ struct LocalDataSourceTests {
                 ],
                 subject: "subject2",
                 body: "body2",
+                sent: Date(timeIntervalSinceNow: -20),
                 received: Date(timeIntervalSinceNow: -10)
             ),
             Mail(
                 id: UUID(),
+                mail: "mail3",
+                rcpt: ["rcpt3_1", "rcpt3_2", "rcpt3_3"],
+                data: "data3",
                 from: Mail.Address(name: "from3", address: "from3@test.com"),
                 to: [
                     Mail.Address(name: "to3_1", address: "to3_1@test.com"),
@@ -70,6 +81,7 @@ struct LocalDataSourceTests {
                 ],
                 subject: "subject3",
                 body: "body3",
+                sent: Date(timeIntervalSinceNow: -30),
                 received: Date(timeIntervalSinceNow: -20)
             )
         ]

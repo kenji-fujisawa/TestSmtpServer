@@ -19,20 +19,28 @@ struct Mail: Equatable {
     }
     
     var id: UUID
+    var mail: String
+    var rcpt: [String]
+    var data: String
     var from: Address?
     var to: [Address]
     var cc: [Address]
     var subject: String
     var body: String
-    var received: Date
+    var sent: Date?
+    var received: Date?
     
-    init(id: UUID = UUID(), from: Address? = nil, to: [Address] = [], cc: [Address] = [], subject: String = "", body: String = "", received: Date = .now) {
+    init(id: UUID = UUID(), mail: String = "", rcpt: [String] = [], data: String = "", from: Address? = nil, to: [Address] = [], cc: [Address] = [], subject: String = "", body: String = "", sent: Date? = nil, received: Date? = nil) {
         self.id = id
+        self.mail = mail
+        self.rcpt = rcpt
+        self.data = data
         self.from = from
         self.to = to
         self.cc = cc
         self.subject = subject
         self.body = body
+        self.sent = sent
         self.received = received
     }
 }

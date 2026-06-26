@@ -86,11 +86,15 @@ class DefaultLocalDataSource: LocalDataSource {
     
     func update(_ mail: Mail) throws {
         if let local = try getLocalMail(id: mail.id) {
+            local.mail = mail.mail
+            local.rcpt = mail.rcpt
+            local.data = mail.data
             local.from = mail.from?.asLocal()
             local.to = mail.to.map { $0.asLocal() }
             local.cc = mail.cc.map { $0.asLocal() }
             local.subject = mail.subject
             local.body = mail.body
+            local.sent = mail.sent
             local.received = mail.received
             try context.save()
         }
@@ -126,11 +130,15 @@ extension Mail {
     func asLocal() -> LocalMail {
         LocalMail(
             id: self.id,
+            mail: self.mail,
+            rcpt: self.rcpt,
+            data: self.data,
             from: self.from?.asLocal(),
             to: self.to.map { $0.asLocal() },
             cc: self.cc.map { $0.asLocal() },
             subject: self.subject,
             body: self.body,
+            sent: self.sent,
             received: self.received
         )
     }
@@ -149,6 +157,9 @@ extension LocalMail {
     func asMail() -> Mail {
         Mail(
             id: self.id,
+            mail: self.mail,
+            rcpt: self.rcpt,
+            data: self.data,
             from: self.from?.asMail(),
             to: self.to
                 .sorted { $0.address < $1.address }
@@ -158,6 +169,7 @@ extension LocalMail {
                 .map { $0.asMail() },
             subject: self.subject,
             body: self.body,
+            sent: self.sent,
             received: self.received
         )
     }
