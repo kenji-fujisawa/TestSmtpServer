@@ -27,7 +27,7 @@ struct TestSmtpServerApp: App {
         #else
         let inMemory = false
         #endif
-        let schema = Schema(LocalUser.self, LocalMail.self)
+        let schema = Schema(versionedSchema: TestSmtpServerSchema_v1.self)
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
             container = try ModelContainer(for: schema, configurations: config)
@@ -129,7 +129,7 @@ struct UITestApp: App {
     
     init() {
         do {
-            let schema = Schema(LocalUser.self, LocalMail.self)
+            let schema = Schema(versionedSchema: TestSmtpServerSchema_v1.self)
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             let container = try ModelContainer(for: schema, configurations: config)
             

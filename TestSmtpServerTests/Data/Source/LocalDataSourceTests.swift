@@ -19,7 +19,7 @@ struct LocalDataSourceTests {
     private let mails: [Mail]
     
     init() throws {
-        let schema = Schema(LocalUser.self, LocalMail.self)
+        let schema = Schema(versionedSchema: TestSmtpServerSchema_v1.self)
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         self.container = try ModelContainer(for: schema, configurations: config)
         self.context = ModelContext(self.container)
