@@ -13,47 +13,62 @@ struct MailView: View {
     @State private var rawData: Bool = false
     
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selected) {
-                ForEach(viewModel.mails, id: \.id) { mail in
-                    SidebarItem(mail: mail)
-                        .tag(mail.id)
-                }
-            }
-        } detail: {
-            HStack {
-                Spacer()
-                Toggle(isOn: $rawData) {
-                    Text("RawData")
-                }
-                .toggleStyle(.switch)
-                .padding([.top, .horizontal])
-            }
+        GeometryReader { proxy in
+            let leftWidth = proxy.size.width * 0.3
+            let minLeftWidth = min(leftWidth, 180)
             
-            if let mail = viewModel.mails.first(where: { $0.id == selected }) {
-                if rawData {
-                    RawDataView(mail: mail)
+            HSplitView {
+                List(selection: $selected) {
+                    ForEach(viewModel.mails, id: \.id) { mail in
+                        SidebarItem(mail: mail)
+                            .tag(mail.id)
+                    }
+                }
+                .frame(minWidth: minLeftWidth, idealWidth: leftWidth)
+                
+                VStack {
+                    Group {
+                        if let mail = viewModel.mails.first(where: { $0.id == selected }) {
+                            if rawData {
+                                RawDataView(mail: mail)
+                            } else {
+                                MailView(mail: mail)
+                            }
+                        } else {
+                            if rawData {
+                                RawDataView(mail: Mail())
+                            } else {
+                                MailView(mail: Mail())
+                            }
+                        }
+                    }
+                    .padding()
+                    
+                    Spacer()
+                    
+                    if let error = viewModel.error {
+                        HStack {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.red)
+                            Text(error)
+                                .foregroundStyle(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(4)
+                        .background(Color(red: 255/255, green: 228/255, blue: 222/255))
+                        .clipShape(.buttonBorder)
                         .padding()
-                } else {
-                    MailView(mail: mail)
-                        .padding()
+                    }
                 }
-            }
-            
-            Spacer()
-            
-            if let error = viewModel.error {
-                HStack {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.red)
-                    Text(error)
-                        .foregroundStyle(.black)
+                .layoutPriority(10)
+                .toolbar {
+                    ToolbarItem {
+                        Toggle(isOn: $rawData) {
+                            Text("RawData")
+                        }
+                        .toggleStyle(.button)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(4)
-                .background(Color(red: 255/255, green: 228/255, blue: 222/255))
-                .clipShape(.buttonBorder)
-                .padding()
             }
         }
     }
@@ -76,6 +91,7 @@ struct MailView: View {
                 Text(mail.body)
                     .foregroundStyle(.tertiary)
             }
+            .lineLimit(1)
         }
     }
     

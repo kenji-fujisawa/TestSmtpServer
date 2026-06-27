@@ -65,12 +65,16 @@ struct ContentView: View {
             switch selected {
             case .mailbox:
                 MailView(viewModel: MailViewModel(mailRepository))
+                    .navigationTitle("メール")
             case .certificate:
                 CertificateSettingView(viewModel: CertificateSettingViewModel(certificateRepository))
+                    .navigationTitle("証明書設定")
             case .user:
                 UserSettingView(viewModel: UserSettingViewModel(userRepository))
+                    .navigationTitle("ユーザ設定")
             case .log:
                 LogView(viewModel: LogViewModel(logRepository))
+                    .navigationTitle("ログ")
             }
         }
         .onAppear() {
