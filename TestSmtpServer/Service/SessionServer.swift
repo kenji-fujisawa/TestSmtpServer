@@ -271,6 +271,10 @@ class SessionServer<T: Session> {
     private var listener: Listener? = nil
     private let connections = Connections()
     
+    var isRunning: Bool {
+        listener != nil
+    }
+    
     init(port: Int, _ certificateRepository: CertificateRepository, _ dependency: T.Dependency) {
         self.port = port
         self.certificateRepository = certificateRepository

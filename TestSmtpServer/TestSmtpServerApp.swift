@@ -57,7 +57,7 @@ struct TestSmtpServerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(server: server)
                 .environment(\.mailRepository, mailRepository)
                 .environment(\.certificateRepository, certificateRepository)
                 .environment(\.userRepository, userRepository)
