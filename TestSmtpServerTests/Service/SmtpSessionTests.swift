@@ -383,7 +383,7 @@ struct SmtpSessionTests {
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "STARTTLS\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -396,7 +396,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 AUTH PLAIN\r\n"))
         
         userRepo.name = "test"
         userRepo.password = "1234"
@@ -592,7 +592,7 @@ struct SmtpSessionTests {
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -618,7 +618,7 @@ struct SmtpSessionTests {
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "STARTTLS\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -631,7 +631,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 AUTH PLAIN\r\n"))
         
         msg = "AUTH *\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -672,7 +672,7 @@ struct SmtpSessionTests {
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "STARTTLS\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -685,7 +685,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 AUTH PLAIN\r\n"))
         
         msg = "AUTH PLAIN\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -734,7 +734,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "STARTTLS\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -747,7 +747,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 AUTH PLAIN\r\n"))
         
         userRepo.name = "test"
         userRepo.password = "1234"
@@ -811,7 +811,7 @@ struct SmtpSessionTests {
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         var actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "STARTTLS\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -824,7 +824,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 AUTH PLAIN\r\n"))
         
         userRepo.name = "test"
         userRepo.password = "1234"
@@ -911,7 +911,7 @@ struct SmtpSessionTests {
         msg = "localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 STARTTLS\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 STARTTLS\r\n"))
         
         msg = "STARTTLS\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
@@ -924,7 +924,7 @@ struct SmtpSessionTests {
         msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
         actions = await session.handle(msg)
         #expect(actions.count == 1)
-        #expect(actions[0] == .write("250 AUTH PLAIN\r\n"))
+        #expect(actions[0] == .write("250-localhost HELLO\r\n250 AUTH PLAIN\r\n"))
         
         userRepo.name = "test"
         userRepo.password = "1234"
