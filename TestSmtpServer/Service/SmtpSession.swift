@@ -373,7 +373,7 @@ class SmtpSession: Session {
         if line == "." {
             let toAddress = { (name: String, address: String) in
                 TestSmtpServer.Mail.Address(
-                    name: SmtpParser.shared.removeCommentAndQuote(name),
+                    name: SmtpParser.shared.parseMimeHeader(SmtpParser.shared.removeCommentAndQuote(name)),
                     address: SmtpParser.shared.removeCommentAndQuote(address)
                 )
             }
@@ -389,7 +389,7 @@ class SmtpSession: Session {
             let cc = SmtpParser.shared.parseAddressList(header["CC"]?[0] ?? "")
                 .flatMap { $0.group }
                 .map { toAddress($0.name, $0.address) }
-            let subject = SmtpParser.shared.removeCommentAndQuote(header["SUBJECT"]?[0] ?? "")
+            let subject = SmtpParser.shared.parseMimeHeader(SmtpParser.shared.removeCommentAndQuote(header["SUBJECT"]?[0] ?? ""))
             let sent = SmtpParser.shared.parseDateTime(SmtpParser.shared.removeCommentAndQuote(header["DATE"]?[0] ?? ""))
             
             do {
@@ -659,5 +659,81 @@ class SmtpParser {
         }
         
         return nil
+    }
+    
+    func parseQuotedPrintable(_ value: String, encoding: String.Encoding) -> String? {
+        let value = value
+            .replacingOccurrences(of: "=\r\n", with: "")
+            .replacingOccurrences(of: "=\n", with: "")
+        let bytes = Array(value.utf8)
+        var data = Data()
+        var i = 0
+        while i < bytes.count {
+            if bytes[i] == 61 {
+                if i + 2 < bytes.count {
+                    let hex = String(bytes: [bytes[i + 1], bytes[i + 2]], encoding: .ascii) ?? ""
+                    if let byte = UInt8(hex, radix: 16) {
+                        data.append(byte)
+                        i += 3
+                        continue
+                    }
+                }
+            }
+            
+            data.append(bytes[i])
+            i += 1
+        }
+        
+        return String(data: data, encoding: encoding)
+    }
+    
+    func parseMimeHeader(_ value: String) -> String {
+        let pattern = "=\\?([^?]+)\\?([BbQq])\\?([^?]*)\\?="
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return value }
+        
+        let value = value.replacingOccurrences(of: "\\?=\\s+=\\?", with: "?==?", options: .regularExpression)
+        
+        var result = value
+        let range = NSRange(value.startIndex..<value.endIndex, in: value)
+        let matches = regex.matches(in: value, range: range)
+        for match in matches.reversed() {
+            guard match.numberOfRanges == 4,
+                  let charsetRange = Range(match.range(at: 1), in: value),
+                  let encodingRange = Range(match.range(at: 2), in: value),
+                  let dataRange = Range(match.range(at: 3), in: value) else {
+                      continue
+                  }
+            
+            let charset = value[charsetRange].uppercased()
+            let encoding = value[encodingRange].uppercased()
+            let encoded = value[dataRange]
+            
+            let stringEncoding: String.Encoding = if charset.contains("ISO-2022-JP") {
+                String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.ISO_2022_JP.rawValue)))
+            } else if charset.contains("SHIFT_JIS") || charset.contains("SJIS") {
+                .shiftJIS
+            } else if charset.contains("EUC-JP") {
+                .japaneseEUC
+            } else {
+                .utf8
+            }
+            
+            var decoded: String? = nil
+            if encoding == "B" {
+                if let data = Data(base64Encoded: String(encoded)) {
+                    decoded = String(data: data, encoding: stringEncoding)
+                }
+            } else if encoding == "Q" {
+                let encoded = encoded.replacingOccurrences(of: "_", with: " ")
+                decoded = parseQuotedPrintable(encoded, encoding: stringEncoding)
+            }
+            
+            if let decoded = decoded,
+               let range = Range(match.range(at: 0), in: result) {
+                result.replaceSubrange(range, with: decoded)
+            }
+        }
+        
+        return result
     }
 }

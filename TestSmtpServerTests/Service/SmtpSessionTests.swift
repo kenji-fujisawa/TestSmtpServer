@@ -309,6 +309,61 @@ struct SmtpSessionTests {
         #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
     }
     
+    @Test func testParseQuotedPrintable() async throws {
+        let parser = SmtpParser()
+        var result = parser.parseQuotedPrintable("=E3=83=86=E3=82=B9=E3=83=88", encoding: .utf8)
+        #expect(result == "テスト")
+        
+        result = parser.parseQuotedPrintable("=83e=83X=83g", encoding: .shiftJIS)
+        #expect(result == "テスト")
+        
+        result = parser.parseQuotedPrintable("=A5=C6=A5=B9=A5=C8", encoding: .japaneseEUC)
+        #expect(result == "テスト")
+        
+        let iso2022jp = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.ISO_2022_JP.rawValue)))
+        result = parser.parseQuotedPrintable("=1B$B%F%9%H=1B(B", encoding: iso2022jp)
+        #expect(result == "テスト")
+        
+        result = parser.parseQuotedPrintable("=E3=83=86=E3=82=\r\n=B9=E3=83=88", encoding: .utf8)
+        #expect(result == "テスト")
+    }
+    
+    @Test func testParseMimeHeader() async throws {
+        let parser = SmtpParser()
+        var result = parser.parseMimeHeader("=?utf-8?B?44OG44K544OI?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?utf-8?Q?=E3=83=86=E3=82=B9=E3=83=88?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?shift_jis?B?g2WDWINn?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?shift_jis?Q?=83e=83X=83g?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?sjis?B?g2WDWINn?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?sjis?Q?=83e=83X=83g?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?euc-jp?B?pcaluaXI?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?euc-jp?Q?=A5=C6=A5=B9=A5=C8?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?iso-2022-jp?B?GyRCJUYlOSVIGyhC?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?iso-2022-jp?Q?=1B$B%F%9%H=1B(B?=")
+        #expect(result == "テスト")
+        
+        result = parser.parseMimeHeader("=?utf-8?B?44GT44KT?= =?utf-8?B?44Gr44Gh44Gv?=")
+        #expect(result == "こんにちは")
+    }
+    
     @Test func testOnConnect() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
