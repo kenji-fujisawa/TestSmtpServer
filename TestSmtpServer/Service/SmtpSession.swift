@@ -180,12 +180,12 @@ class SmtpSession: Session {
     private func handleEHLO(_ line: String) {
         if ssl {
             response.code = 250
-            response.args = ["AUTH PLAIN"]
+            response.args = ["localhost HELLO", "AUTH PLAIN"]
             state = .ready
             mail.clear()
         } else {
             response.code = 250
-            response.args = ["STARTTLS"]
+            response.args = ["localhost HELLO", "STARTTLS"]
             state = .ready
             mail.clear()
         }
