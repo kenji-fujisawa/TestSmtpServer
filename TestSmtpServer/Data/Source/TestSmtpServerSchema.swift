@@ -12,6 +12,7 @@ struct TestSmtpServerSchema_v1: VersionedSchema {
     static var models: [any PersistentModel.Type] = [
         TestSmtpServerSchema_v1.Mail_v1.self,
         TestSmtpServerSchema_v1.Mail_v1.Address_v1.self,
+        TestSmtpServerSchema_v1.Mail_v1.Attachment_v1.self,
         TestSmtpServerSchema_v1.User_v1.self
     ]
 }

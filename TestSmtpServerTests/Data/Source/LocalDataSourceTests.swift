@@ -40,7 +40,13 @@ struct LocalDataSourceTests {
                 to: [Mail.Address(name: "to1", address: "to1@test.com")],
                 cc: [Mail.Address(name: "cc1", address: "cc1@test.com")],
                 subject: "subject1",
-                body: "body1",
+                body: ["body1"],
+                attachments: [
+                    Mail.Attachment(
+                        filename: "attach1",
+                        data: "data1".data(using: .utf8) ?? Data()
+                    )
+                ],
                 sent: Date(timeIntervalSinceNow: -10),
                 received: Date(timeIntervalSinceNow: 0)
             ),
@@ -59,7 +65,17 @@ struct LocalDataSourceTests {
                     Mail.Address(name: "cc2_2", address: "cc2_2@test.com")
                 ],
                 subject: "subject2",
-                body: "body2",
+                body: ["body2_1", "body2_2"],
+                attachments: [
+                    Mail.Attachment(
+                        filename: "attach2_1",
+                        data: "data2_1".data(using: .utf8) ?? Data()
+                    ),
+                    Mail.Attachment(
+                        filename: "attach2_2",
+                        data: "data2_2".data(using: .utf8) ?? Data()
+                    )
+                ],
                 sent: Date(timeIntervalSinceNow: -20),
                 received: Date(timeIntervalSinceNow: -10)
             ),
@@ -80,7 +96,21 @@ struct LocalDataSourceTests {
                     Mail.Address(name: "cc3_3", address: "cc3_3@test.com")
                 ],
                 subject: "subject3",
-                body: "body3",
+                body: ["body3_1", "body3_2", "body3_3"],
+                attachments: [
+                    Mail.Attachment(
+                        filename: "attach3_1",
+                        data: "data3_1".data(using: .utf8) ?? Data()
+                    ),
+                    Mail.Attachment(
+                        filename: "attach3_2",
+                        data: "data3_2".data(using: .utf8) ?? Data()
+                    ),
+                    Mail.Attachment(
+                        filename: "attach3_3",
+                        data: "data3_3".data(using: .utf8) ?? Data()
+                    )
+                ],
                 sent: Date(timeIntervalSinceNow: -30),
                 received: Date(timeIntervalSinceNow: -20)
             )
@@ -227,7 +257,17 @@ struct LocalDataSourceTests {
             Mail.Address(name: "to1_1", address: "to1_1@test.com"),
             Mail.Address(name: "to1_2", address: "to1_2@test.com")
         ]
-        mail1.body = "test"
+        mail1.body = ["test1", "test2"]
+        mail1.attachments = [
+            Mail.Attachment(
+                filename: "attach1_1",
+                data: "data1_1".data(using: .utf8) ?? Data()
+            ),
+            Mail.Attachment(
+                filename: "attach1_2",
+                data: "data1_2".data(using: .utf8) ?? Data()
+            )
+        ]
         
         var mail2 = mails[2]
         mail2.to = []
@@ -255,7 +295,8 @@ struct LocalDataSourceTests {
         #expect(results[0].to == [])
         #expect(results[0].cc == mails[2].cc)
         #expect(results[0].subject == "subject3")
-        #expect(results[0].body == "body3")
+        #expect(results[0].body == mails[2].body)
+        #expect(results[0].attachments == mails[2].attachments)
         #expect(results[2].from?.name == "from1")
         #expect(results[2].from?.address == "from1@test.com")
         #expect(results[2].to.count == 2)
@@ -265,7 +306,14 @@ struct LocalDataSourceTests {
         #expect(results[2].to[1].address == "to1_2@test.com")
         #expect(results[2].cc == mails[0].cc)
         #expect(results[2].subject == "subject1")
-        #expect(results[2].body == "test")
+        #expect(results[2].body.count == 2)
+        #expect(results[2].body[0] == "test1")
+        #expect(results[2].body[1] == "test2")
+        #expect(results[2].attachments.count == 2)
+        #expect(results[2].attachments[0].filename == "attach1_1")
+        #expect(String(data: results[2].attachments[0].data, encoding: .utf8) == "data1_1")
+        #expect(results[2].attachments[1].filename == "attach1_2")
+        #expect(String(data: results[2].attachments[1].data, encoding: .utf8) == "data1_2")
     }
     
     @Test func testDeleteMail() async throws {
@@ -299,5 +347,15 @@ struct LocalDataSourceTests {
         #expect(addresses[7] == mails[2].to[0])
         #expect(addresses[8] == mails[2].to[1])
         #expect(addresses[9] == mails[2].to[2])
+        
+        let attachmentDescriptor = FetchDescriptor<LocalMail.Attachment>(
+            sortBy: [.init(\.filename)]
+        )
+        let attachments = try context.fetch(attachmentDescriptor).map { $0.asMail() }
+        #expect(attachments.count == 4)
+        #expect(attachments[0] == mails[0].attachments[0])
+        #expect(attachments[1] == mails[2].attachments[0])
+        #expect(attachments[2] == mails[2].attachments[1])
+        #expect(attachments[3] == mails[2].attachments[2])
     }
 }

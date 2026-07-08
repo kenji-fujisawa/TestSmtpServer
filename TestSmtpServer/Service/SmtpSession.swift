@@ -398,6 +398,7 @@ class SmtpSession: Session {
             let cc = toAddressList(header["CC"]?[0] ?? "")
             let subject = parseMimeHeader(header["SUBJECT"]?[0] ?? "")
             let sent = toDateTime(header["DATE"]?[0] ?? "")
+            let mimeBody = parser.parseMimeBody(header: header, body: body)
             
             do {
                 let mail = TestSmtpServer.Mail(
@@ -408,7 +409,12 @@ class SmtpSession: Session {
                     to: to,
                     cc: cc,
                     subject: subject,
-                    body: body,
+                    body: mimeBody.flatten
+                        .filter { $0.type == .text }
+                        .map { $0.body },
+                    attachments: mimeBody.flatten
+                        .filter { $0.type == .data }
+                        .map { TestSmtpServer.Mail.Attachment(filename: $0.filename, data: $0.data ?? Data()) },
                     sent: sent,
                     received: .now
                 )

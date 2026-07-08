@@ -18,6 +18,16 @@ struct Mail: Equatable {
         }
     }
     
+    struct Attachment: Equatable {
+        var filename: String
+        var data: Data
+        
+        init(filename: String = "", data: Data = Data()) {
+            self.filename = filename
+            self.data = data
+        }
+    }
+    
     var id: UUID
     var mail: String
     var rcpt: [String]
@@ -26,11 +36,12 @@ struct Mail: Equatable {
     var to: [Address]
     var cc: [Address]
     var subject: String
-    var body: String
+    var body: [String]
+    var attachments: [Attachment]
     var sent: Date?
     var received: Date?
     
-    init(id: UUID = UUID(), mail: String = "", rcpt: [String] = [], data: String = "", from: Address? = nil, to: [Address] = [], cc: [Address] = [], subject: String = "", body: String = "", sent: Date? = nil, received: Date? = nil) {
+    init(id: UUID = UUID(), mail: String = "", rcpt: [String] = [], data: String = "", from: Address? = nil, to: [Address] = [], cc: [Address] = [], subject: String = "", body: [String] = [], attachments: [Attachment] = [], sent: Date? = nil, received: Date? = nil) {
         self.id = id
         self.mail = mail
         self.rcpt = rcpt
@@ -40,6 +51,7 @@ struct Mail: Equatable {
         self.cc = cc
         self.subject = subject
         self.body = body
+        self.attachments = attachments
         self.sent = sent
         self.received = received
     }

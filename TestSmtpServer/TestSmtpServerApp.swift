@@ -157,9 +157,9 @@ struct UITestApp: App {
         if CommandLine.arguments.contains("MailView") {
             if CommandLine.arguments.contains("initialValue") {
                 let mails = [
-                    LocalMail(subject: "sub1", body: "body1", received: Date(timeIntervalSinceNow: 0)),
-                    LocalMail(subject: "sub2", body: "body2", received: Date(timeIntervalSinceNow: -10)),
-                    LocalMail(subject: "sub3", body: "body3", received: Date(timeIntervalSinceNow: -20))
+                    LocalMail(subject: "sub1", body: ["body1"], received: Date(timeIntervalSinceNow: 0)),
+                    LocalMail(subject: "sub2", body: ["body2"], received: Date(timeIntervalSinceNow: -10)),
+                    LocalMail(subject: "sub3", body: ["body3"], received: Date(timeIntervalSinceNow: -20))
                 ]
                 mails.forEach { container.mainContext.insert($0) }
             }
@@ -186,7 +186,7 @@ struct UITestApp: App {
                 Button("add") {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "yyyy-MM-dd HH:mm"
-                    let mail = Mail(subject: "subject", body: "body", received: .now)
+                    let mail = Mail(subject: "subject", body: ["body"], received: .now)
                     try? mailRepository.add(mail)
                 }
             } else if CommandLine.arguments.contains("CertificateSettingView") {

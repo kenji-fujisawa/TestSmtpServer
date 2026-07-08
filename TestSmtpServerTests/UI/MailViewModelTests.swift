@@ -26,7 +26,13 @@ struct MailViewModelTests {
                 to: [Mail.Address(name: "to1", address: "to1@test.com")],
                 cc: [Mail.Address(name: "cc1", address: "cc1@test.com")],
                 subject: "subject1",
-                body: "body1",
+                body: ["body1"],
+                attachments: [
+                    Mail.Attachment(
+                        filename: "attach1",
+                        data: "data1".data(using: .utf8) ?? Data()
+                    )
+                ],
                 sent: Date(timeIntervalSinceNow: -10),
                 received: Date(timeIntervalSinceNow: 0)
             ),
@@ -44,7 +50,17 @@ struct MailViewModelTests {
                     Mail.Address(name: "cc2_2", address: "cc2_2@test.com")
                 ],
                 subject: "subject2",
-                body: "body2",
+                body: ["body2_1", "body2_2"],
+                attachments: [
+                    Mail.Attachment(
+                        filename: "attach2_1",
+                        data: "data2_1".data(using: .utf8) ?? Data()
+                    ),
+                    Mail.Attachment(
+                        filename: "attach2_2",
+                        data: "data2_2".data(using: .utf8) ?? Data()
+                    )
+                ],
                 sent: Date(timeIntervalSinceNow: -20),
                 received: Date(timeIntervalSinceNow: -10)
             ),
@@ -64,7 +80,21 @@ struct MailViewModelTests {
                     Mail.Address(name: "cc3_3", address: "cc3_3@test.com")
                 ],
                 subject: "subject3",
-                body: "body3",
+                body: ["body3_1", "body3_2", "body3_3"],
+                attachments: [
+                    Mail.Attachment(
+                        filename: "attach3_1",
+                        data: "data3_1".data(using: .utf8) ?? Data()
+                    ),
+                    Mail.Attachment(
+                        filename: "attach3_2",
+                        data: "data3_2".data(using: .utf8) ?? Data()
+                    ),
+                    Mail.Attachment(
+                        filename: "attach3_3",
+                        data: "data3_3".data(using: .utf8) ?? Data()
+                    )
+                ],
                 sent: Date(timeIntervalSinceNow: -30),
                 received: Date(timeIntervalSinceNow: -20)
             )

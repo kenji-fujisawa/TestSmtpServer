@@ -94,6 +94,7 @@ class DefaultLocalDataSource: LocalDataSource {
             local.cc = mail.cc.map { $0.asLocal() }
             local.subject = mail.subject
             local.body = mail.body
+            local.attachments = mail.attachments.map { $0.asLocal() }
             local.sent = mail.sent
             local.received = mail.received
             try context.save()
@@ -138,6 +139,7 @@ extension Mail {
             cc: self.cc.map { $0.asLocal() },
             subject: self.subject,
             body: self.body,
+            attachments: self.attachments.map { $0.asLocal() },
             sent: self.sent,
             received: self.received
         )
@@ -149,6 +151,15 @@ extension Mail.Address {
         LocalMail.Address(
             name: self.name,
             address: self.address
+        )
+    }
+}
+
+extension Mail.Attachment {
+    func asLocal() -> LocalMail.Attachment {
+        LocalMail.Attachment(
+            filename: self.filename,
+            data: self.data
         )
     }
 }
@@ -169,6 +180,9 @@ extension LocalMail {
                 .map { $0.asMail() },
             subject: self.subject,
             body: self.body,
+            attachments: self.attachments
+                .sorted { $0.filename < $1.filename }
+                .map { $0.asMail() },
             sent: self.sent,
             received: self.received
         )
@@ -180,6 +194,15 @@ extension LocalMail.Address {
         Mail.Address(
             name: self.name,
             address: self.address
+        )
+    }
+}
+
+extension LocalMail.Attachment {
+    func asMail() -> Mail.Attachment {
+        Mail.Attachment(
+            filename: self.filename,
+            data: self.data
         )
     }
 }

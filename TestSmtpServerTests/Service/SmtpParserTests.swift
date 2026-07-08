@@ -344,4 +344,257 @@ struct SmtpParserTests {
         result = parser.parseMimeHeader("=?utf-8?B?44GT44KT?= =?utf-8?B?44Gr44Gh44Gv?=")
         #expect(result == "こんにちは")
     }
+    
+    @Test func testParseMimeBody() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="UTF-8"; name=index.html"#],
+            "CONTENT-TRANSFER-ENCODING": ["7BIT"]
+        ]
+        let body = "test"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "test")
+    }
+    
+    @Test func testParseMimeBody_defaultHeader() async throws {
+        let parser = DefaultSmtpParser()
+        let header: [String: [String]] = [:]
+        let body = "test"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "test")
+    }
+    
+    @Test func testParseMimeBody_base64() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="UTF-8""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = """
+            44OG44K5\r\n\
+            44OI
+            """
+        
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "テスト")
+    }
+    
+    @Test func testParseMimeBody_quotedPrintable() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="UTF-8""#],
+            "CONTENT-TRANSFER-ENCODING": ["QUOTED-PRINTABLE"]
+        ]
+        let body = """
+            =E3=83=86=E3=82=B9=\r\n\
+            =E3=83=88
+            """
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "テスト")
+    }
+    
+    @Test func testParseMimeBody_shiftJIS() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="Shift_JIS""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = "g2WDWINn"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "テスト")
+    }
+    
+    @Test func testParseMimeBody_eucjp() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="EUC-JP""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = "pcaluaXI"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "テスト")
+    }
+    
+    @Test func testParseMimeBody_eucjp_quotedPrintable() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="EUC-JP""#],
+            "CONTENT-TRANSFER-ENCODING": ["QUOTED-PRINTABLE"]
+        ]
+        let body = "=A5=C6=A5=B9=A5=C8"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "テスト")
+    }
+    
+    @Test func testParseMimeBody_iso2022jp() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="iso-2022-jp""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = "GyRCJUYlOSVIGyhC"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "テスト")
+    }
+    
+    @Test func testParseMimeBody_iso2022jp_7bit() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" text/html; charset="iso-2022-jp""#],
+            "CONTENT-TRANSFER-ENCODING": ["7BIT"]
+        ]
+        let body = """
+            \u{1B}$B$\"$\"$\"\u{1B}(B\r\n\
+            \u{1B}$B$$$$$$\u{1B}(B\r\n\
+            \u{1B}$B$&$&$&\u{1B}(B
+            """
+        
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .text)
+        #expect(result.body == "あああ\r\nいいい\r\nううう")
+    }
+    
+    @Test func testParseMimeBody_multipart() async throws {
+        let parser = DefaultSmtpParser()
+        let header = ["CONTENT-TYPE": [#" multipart/mixed; boundary="__separator__""#]]
+        let body = """
+            --__separator__\r\n\
+            Content-Type: text/plain; charset="utf-8"\r\n\
+            Content-Transfer-Encoding: 7bit\r\n\
+            \r\n\
+            section1\r\n\
+            --__separator__\r\n\
+            Content-Type: multipart/alternative; boundary="__child__"\r\n\
+            \r\n\
+            --__child__\r\n\
+            Content-Type: text/plain; charset="utf-8"\r\n\
+            Content-Transfer-Encoding: 7bit\r\n\
+            \r\n\
+            section2-1\r\n\
+            --__child__\r\n\
+            Content-Type: multipart/related; boundary="__relate__"\r\n\
+            \r\n\
+            --__relate__\r\n\
+            Content-Type: text/plain; charset="utf-8"\r\n\
+            Content-Transfer-Encoding: 7bit\r\n\
+            \r\n\
+            section2-2-1\r\n\
+            --__relate__\r\n\
+            Content-Type: text/plain; charset="utf-8"\r\n\
+            Content-Transfer-Encoding: 7bit\r\n\
+            \r\n\
+            section2-2-2\r\n\
+            --__relate__--\r\n\
+            --__child__--\r\n\
+            --__separator__\r\n\
+            Content-Type: text/plain; charset="utf-8"\r\n\
+            Content-Transfer-Encoding: 7bit\r\n\
+            \r\n\
+            section3\r\n\
+            \r\n\
+            \r\n\
+            test\r\n\
+            --__separator__--\r\n\
+            \r\n
+            """
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .mixed)
+        #expect(result.children.count == 3)
+        #expect(result.children[0].type == .text)
+        #expect(result.children[0].body == "section1\r\n")
+        #expect(result.children[1].type == .alternative)
+        #expect(result.children[1].children.count == 2)
+        #expect(result.children[1].children[0].type == .text)
+        #expect(result.children[1].children[0].body == "section2-1\r\n")
+        #expect(result.children[1].children[1].type == .related)
+        #expect(result.children[1].children[1].children.count == 2)
+        #expect(result.children[1].children[1].children[0].type == .text)
+        #expect(result.children[1].children[1].children[0].body == "section2-2-1\r\n")
+        #expect(result.children[1].children[1].children[1].type == .text)
+        #expect(result.children[1].children[1].children[1].body == "section2-2-2\r\n")
+        #expect(result.children[2].type == .text)
+        #expect(result.children[2].body == "section3\r\n\r\n\r\ntest\r\n")
+        
+        #expect(result.flatten.count == 5)
+        #expect(result.flatten[0].type == .text)
+        #expect(result.flatten[0].body == "section1\r\n")
+        #expect(result.flatten[1].type == .text)
+        #expect(result.flatten[1].body == "section2-1\r\n")
+        #expect(result.flatten[2].type == .text)
+        #expect(result.flatten[2].body == "section2-2-1\r\n")
+        #expect(result.flatten[3].type == .text)
+        #expect(result.flatten[3].body == "section2-2-2\r\n")
+        #expect(result.flatten[4].type == .text)
+        #expect(result.flatten[4].body == "section3\r\n\r\n\r\ntest\r\n")
+    }
+    
+    @Test func testParseMimeBody_data() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" application/json; charset="utf-8""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"],
+            "CONTENT-DISPOSITION": [#"attachment; filename="=?utf-8?Q?test.json?=""#]
+        ]
+        let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .data)
+        #expect(result.filename == "test.json")
+        
+        let json = String(data: result.data ?? Data(), encoding: .utf8)
+        #expect(json == #"{"key1":"value","key2":111}"#)
+    }
+    
+    @Test func testParseMimeBody_RFC2231Filename() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" application/json; charset="utf-8""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"],
+            "CONTENT-DISPOSITION": [#"attachment; filename*0*=Shift_JIS''test%83e; filename*1*=%83X%83g; filename*2=test.json"#]
+        ]
+        let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .data)
+        #expect(result.filename == "testテストtest.json")
+        
+        let json = String(data: result.data ?? Data(), encoding: .utf8)
+        #expect(json == #"{"key1":"value","key2":111}"#)
+    }
+    
+    @Test func testParseMimeBody_noContentDescription() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" application/json; charset="utf-8"; name="=?utf-8?Q?test.json?=""#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .data)
+        #expect(result.filename == "test.json")
+        
+        let json = String(data: result.data ?? Data(), encoding: .utf8)
+        #expect(json == #"{"key1":"value","key2":111}"#)
+    }
+    
+    @Test func testParseMimeBody_noContentDescription_RFC2231() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" application/json; charset="utf-8"; name*=euc-jp'ja'%A5%C6%A5%B9%A5%C8"#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .data)
+        #expect(result.filename == "テスト")
+        
+        let json = String(data: result.data ?? Data(), encoding: .utf8)
+        #expect(json == #"{"key1":"value","key2":111}"#)
+    }
 }

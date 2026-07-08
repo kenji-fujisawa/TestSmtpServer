@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MailView: View {
     let viewModel: MailViewModel
@@ -88,7 +89,7 @@ struct MailView: View {
                 }
                 Text(mail.subject)
                     .foregroundStyle(.secondary)
-                Text(mail.body)
+                Text(mail.body.first ?? "")
                     .foregroundStyle(.tertiary)
             }
             .lineLimit(1)
@@ -104,10 +105,31 @@ struct MailView: View {
                 
                 Divider()
                 
-                ScrollView {
-                    Text(mail.body)
+                if mail.body.count <= 1 {
+                    ScrollView {
+                        Text(mail.body.first ?? "")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    TabView {
+                        ForEach(mail.body, id: \.self) { body in
+                            Tab(body, systemImage: "text.page") {
+                                ScrollView {
+                                    Text(body)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                            }
+                        }
+                    }
+                    .tabViewStyle(.sidebarAdaptable)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))]) {
+                    ForEach(mail.attachments, id: \.filename) { attachment in
+                        AttachmentItem(attachment: attachment)
+                    }
+                }
                 
                 Spacer()
             }
@@ -142,6 +164,43 @@ struct MailView: View {
                         Text(mail.cc.map { $0.displayName }.joined(separator: ", "))
                             .foregroundStyle(.secondary)
                     }
+                }
+            }
+        }
+    }
+    
+    private struct AttachmentItem: View {
+        private struct AnyFile: Transferable {
+            let data: Data
+            let type: UTType?
+            
+            static var transferRepresentation: some TransferRepresentation {
+                DataRepresentation(exportedContentType: .data) { file in
+                    file.data
+                }
+            }
+        }
+        
+        let attachment: Mail.Attachment
+        @State private var showExporter: Bool = false
+        @State private var exportItem: AnyFile? = nil
+        
+        var body: some View {
+            Button {
+                let ext = URL(fileURLWithPath: attachment.filename).pathExtension
+                exportItem = AnyFile(data: attachment.data, type: UTType(filenameExtension: ext))
+                showExporter = true
+            } label: {
+                HStack {
+                    Image(systemName: "document")
+                    Text(attachment.filename)
+                }
+            }
+            .fileExporter(isPresented: $showExporter, item: exportItem, contentTypes: [exportItem?.type ?? .data], defaultFilename: attachment.filename) { result in
+                switch result {
+                case .success(_): break
+                case .failure(let error):
+                    print(error)
                 }
             }
         }
@@ -222,7 +281,7 @@ private class FakeMailRepository: MailRepository {
                     to: [Mail.Address(name: "to1", address: "to1@test.com")],
                     cc: [Mail.Address(name: "cc1", address: "cc1@test.com")],
                     subject: "subject1",
-                    body: "body1",
+                    body: ["body1"],
                     sent: Date(timeIntervalSinceNow: -10),
                     received: Date(timeIntervalSinceNow: 0)
                 ),
@@ -240,7 +299,7 @@ private class FakeMailRepository: MailRepository {
                         Mail.Address(name: "cc2_2", address: "cc2_2@test.com")
                     ],
                     subject: "subject2",
-                    body: "body2",
+                    body: ["body2_1", "body2_2"],
                     sent: Date(timeIntervalSinceNow: -20),
                     received: Date(timeIntervalSinceNow: -10)
                 ),
@@ -260,7 +319,7 @@ private class FakeMailRepository: MailRepository {
                         Mail.Address(name: "cc3_3", address: "cc3_3@test.com")
                     ],
                     subject: "subject3",
-                    body: "body3",
+                    body: ["body3_1", "body3_2", "body3_3"],
                     sent: Date(timeIntervalSinceNow: -30),
                     received: Date(timeIntervalSinceNow: -20)
                 )
