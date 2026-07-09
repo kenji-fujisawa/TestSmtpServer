@@ -38,7 +38,7 @@ protocol SmtpParser {
     func removeCommentAndQuote(_ value: String) -> String
     func parseAddressList(_ addressList: String) -> [(groupName: String, group: [(name: String, address: String)])]
     func parseDateTime(_ value: String) -> Date?
-    func parseQuotedPrintable(_ value: String, encoding: String.Encoding) -> String?
+    func parseQuotedPrintable(_ value: String) -> Data
     func parseMimeHeader(_ value: String) -> String
     func parseMimeBody(header: [String: [String]], body: String) -> MimeBody
 }
@@ -251,7 +251,7 @@ class DefaultSmtpParser: SmtpParser {
         return nil
     }
     
-    func parseQuotedPrintable(_ value: String, encoding: String.Encoding) -> String? {
+    func parseQuotedPrintable(_ value: String) -> Data {
         let value = value
             .replacingOccurrences(of: "=\r\n", with: "")
             .replacingOccurrences(of: "=\n", with: "")
@@ -259,7 +259,7 @@ class DefaultSmtpParser: SmtpParser {
         var data = Data()
         var i = 0
         while i < bytes.count {
-            if bytes[i] == 61 {
+            if bytes[i] == 0x3d {
                 if i + 2 < bytes.count {
                     let hex = String(bytes: [bytes[i + 1], bytes[i + 2]], encoding: .ascii) ?? ""
                     if let byte = UInt8(hex, radix: 16) {
@@ -274,7 +274,7 @@ class DefaultSmtpParser: SmtpParser {
             i += 1
         }
         
-        return String(data: data, encoding: encoding)
+        return data
     }
     
     func parseMimeHeader(_ value: String) -> String {
@@ -305,7 +305,7 @@ class DefaultSmtpParser: SmtpParser {
                 }
             } else if encoding == "Q" {
                 let encoded = encoded.replacingOccurrences(of: "_", with: " ")
-                decoded = parseQuotedPrintable(encoded, encoding: stringEncoding)
+                decoded = String(data: parseQuotedPrintable(encoded), encoding: stringEncoding)
             }
             
             if let decoded = decoded,
@@ -342,7 +342,7 @@ class DefaultSmtpParser: SmtpParser {
                     decoded = String(data: data, encoding: stringEncoding)
                 }
             } else if encoding == "QUOTED-PRINTABLE" {
-                decoded = parseQuotedPrintable(body, encoding: stringEncoding)
+                decoded = String(data: parseQuotedPrintable(body), encoding: stringEncoding)
             } else if encoding == "7BIT" || encoding == "8BIT" {
                 if let data = body.data(using: .utf8) {
                     decoded = String(data: data, encoding: stringEncoding)
@@ -385,6 +385,8 @@ class DefaultSmtpParser: SmtpParser {
             if encoding == "BASE64" {
                 let body = body.replacingOccurrences(of: #"[ \t\r\n]"#, with: "", options: .regularExpression)
                 data = Data(base64Encoded: body)
+            } else if encoding == "QUOTED-PRINTABLE" {
+                data = parseQuotedPrintable(body)
             }
             
             return MimeBody(type: .data, contentType: contentTypeValue, charset: charset, filename: filename, data: data)

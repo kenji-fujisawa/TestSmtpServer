@@ -292,20 +292,24 @@ struct SmtpParserTests {
     
     @Test func testParseQuotedPrintable() async throws {
         let parser = DefaultSmtpParser()
-        var result = parser.parseQuotedPrintable("=E3=83=86=E3=82=B9=E3=83=88", encoding: .utf8)
+        var data = parser.parseQuotedPrintable("=E3=83=86=E3=82=B9=E3=83=88")
+        var result = String(data: data, encoding: .utf8)
         #expect(result == "テスト")
         
-        result = parser.parseQuotedPrintable("=83e=83X=83g", encoding: .shiftJIS)
+        data = parser.parseQuotedPrintable("=83e=83X=83g")
+        result = String(data: data, encoding: .shiftJIS)
         #expect(result == "テスト")
         
-        result = parser.parseQuotedPrintable("=A5=C6=A5=B9=A5=C8", encoding: .japaneseEUC)
+        data = parser.parseQuotedPrintable("=A5=C6=A5=B9=A5=C8")
+        result = String(data: data, encoding: .japaneseEUC)
         #expect(result == "テスト")
         
-        let iso2022jp = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.ISO_2022_JP.rawValue)))
-        result = parser.parseQuotedPrintable("=1B$B%F%9%H=1B(B", encoding: iso2022jp)
+        data = parser.parseQuotedPrintable("=1B$B%F%9%H=1B(B")
+        result = String(data: data, encoding: .iso2022JP)
         #expect(result == "テスト")
         
-        result = parser.parseQuotedPrintable("=E3=83=86=E3=82=\r\n=B9=E3=83=88", encoding: .utf8)
+        data = parser.parseQuotedPrintable("=E3=83=86=E3=82=\r\n=B9=E3=83=88")
+        result = String(data: data, encoding: .utf8)
         #expect(result == "テスト")
     }
     
@@ -550,6 +554,22 @@ struct SmtpParserTests {
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
         #expect(json == #"{"key1":"value","key2":111}"#)
+    }
+    
+    @Test func testParseMimeBody_data_quotedPrintable() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#" application/json; charset="utf-8""#],
+            "CONTENT-TRANSFER-ENCODING": ["QUOTED-PRINTABLE"],
+            "CONTENT-DISPOSITION": [#"attachment; filename="=?utf-8?Q?test.json?=""#]
+        ]
+        let body = #"{"key1":"=E3=83=86=E3=82=B9=E3=83=88","key2":111}"#
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .data)
+        #expect(result.filename == "test.json")
+        
+        let json = String(data: result.data ?? Data(), encoding: .utf8)
+        #expect(json == #"{"key1":"テスト","key2":111}"#)
     }
     
     @Test func testParseMimeBody_RFC2231Filename() async throws {
