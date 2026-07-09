@@ -75,7 +75,7 @@ class DefaultSmtpParser: SmtpParser {
         for line in lines {
             let parts = line.split(separator: ":", maxSplits: 1)
             guard parts.count == 2 else { continue }
-            let key = String(parts[0].uppercased())
+            let key = String(parts[0])
             let value = trimLeadingSpace(String(parts[1]))
             results[key, default: []].append(value)
         }
@@ -324,34 +324,34 @@ class DefaultSmtpParser: SmtpParser {
     }
     
     func parseMimeBody(header: [String: [String]], body: String) -> MimeBody {
-        let contentType = header["CONTENT-TYPE"]?.first ?? "text/plain; charset=us-ascii"
+        let contentType = header[caseInsensitive: "Content-Type"]?.first ?? "text/plain; charset=us-ascii"
         let (contentTypeValue, contentTypeParams) = parseContentHeader(contentType)
         let types = contentTypeValue.split(separator: "/")
         guard types.count == 2 else { return MimeBody() }
-        let type = types[0].trimmingCharacters(in: .whitespaces).uppercased()
-        let subtype = types[1].trimmingCharacters(in: .whitespaces).uppercased()
+        let type = types[0].lowercased()
+        let subtype = types[1].lowercased()
         
-        if type == "TEXT" {
-            let charset = contentTypeParams["CHARSET"] ?? ""
-            let encoding = header["CONTENT-TRANSFER-ENCODING"]?.first?.trimmingCharacters(in: .whitespaces).uppercased() ?? "7BIT"
+        if type == "text" {
+            let charset = contentTypeParams[caseInsensitive: "charset"] ?? ""
+            let encoding = header[caseInsensitive: "Content-Transfer-Encoding"]?.first?.trimmingCharacters(in: .whitespaces).lowercased() ?? "7bit"
             let stringEncoding = toEncoding(charset)
             var decoded: String? = nil
-            if encoding == "BASE64" {
+            if encoding == "base64" {
                 let body = body.replacingOccurrences(of: #"[ \t\r\n]"#, with: "", options: .regularExpression)
                 if let data = Data(base64Encoded: body) {
                     decoded = String(data: data, encoding: stringEncoding)
                 }
-            } else if encoding == "QUOTED-PRINTABLE" {
+            } else if encoding == "quoted-printable" {
                 decoded = String(data: parseQuotedPrintable(body), encoding: stringEncoding)
-            } else if encoding == "7BIT" || encoding == "8BIT" {
+            } else if encoding == "7bit" || encoding == "8bit" {
                 if let data = body.data(using: .utf8) {
                     decoded = String(data: data, encoding: stringEncoding)
                 }
             }
             
             return MimeBody(type: .text, contentType: contentTypeValue, charset: charset, body: decoded ?? "")
-        } else if type == "MULTIPART" {
-            guard let boundary = contentTypeParams["BOUNDARY"] else { return MimeBody() }
+        } else if type == "multipart" {
+            guard let boundary = contentTypeParams[caseInsensitive: "boundary"] else { return MimeBody() }
             
             var children: [MimeBody] = []
             let sections = splitSections(body, boundary: boundary)
@@ -361,31 +361,31 @@ class DefaultSmtpParser: SmtpParser {
                 children.append(child)
             }
             
-            if subtype == "MIXED" {
+            if subtype == "mixed" {
                 return MimeBody(type: .mixed, contentType: contentTypeValue, children: children)
-            } else if subtype == "ALTERNATIVE" {
+            } else if subtype == "alternative" {
                 return MimeBody(type: .alternative, contentType: contentTypeValue, children: children)
-            } else if subtype == "RELATED" {
+            } else if subtype == "related" {
                 return MimeBody(type: .related, contentType: contentTypeValue, children: children)
             }
         } else {
-            let charset = contentTypeParams["CHARSET"] ?? ""
+            let charset = contentTypeParams[caseInsensitive: "charset"] ?? ""
             
-            let disposition = header["CONTENT-DISPOSITION"]?.first ?? ""
+            let disposition = header[caseInsensitive: "Content-Disposition"]?.first ?? ""
             let (_, params) = parseContentHeader(disposition)
             var filename = ""
-            if let val = params["FILENAME"] {
+            if let val = params[caseInsensitive: "filename"] {
                 filename = parseMimeHeader(val)
-            } else if let val = contentTypeParams["NAME"] {
+            } else if let val = contentTypeParams[caseInsensitive: "name"] {
                 filename = parseMimeHeader(val)
             }
             
-            let encoding = header["CONTENT-TRANSFER-ENCODING"]?.first?.trimmingCharacters(in: .whitespaces).uppercased() ?? ""
+            let encoding = header[caseInsensitive: "Content-Transfer-Encoding"]?.first?.trimmingCharacters(in: .whitespaces).lowercased() ?? ""
             var data: Data? = nil
-            if encoding == "BASE64" {
+            if encoding == "base64" {
                 let body = body.replacingOccurrences(of: #"[ \t\r\n]"#, with: "", options: .regularExpression)
                 data = Data(base64Encoded: body)
-            } else if encoding == "QUOTED-PRINTABLE" {
+            } else if encoding == "quoted-printable" {
                 data = parseQuotedPrintable(body)
             }
             
@@ -426,12 +426,12 @@ class DefaultSmtpParser: SmtpParser {
         
         guard parts.count >= 1 else { return ("", [:]) }
         
-        let value = parts[0].uppercased()
+        let value = parts[0]
         var params: [String: String] = [:]
         for part in parts.dropFirst() {
             let parts = part.split(separator: "=", maxSplits: 1)
             guard parts.count == 2 else { continue }
-            let key = parts[0].uppercased()
+            let key = String(parts[0])
             params[key] = String(parts[1])
         }
         

@@ -14,100 +14,100 @@ struct SmtpParserTests {
 
     @Test func testParseData() async throws {
         let data =
-            #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
-            #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
-            #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
-            "folded: aaa" + "\r\n" +
+            #"Quoted_Pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
+            #"Quoted_Pair_in_Comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
+            #"Quoted_Pair_in_Quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
+            "Folded: aaa" + "\r\n" +
             "   bbb ccc" + "\r\n" +
-            "tab_folded: aaa" + "\r\n" +
+            "Tab_Folded: aaa" + "\r\n" +
             "\t \t bbb ccc" + "\r\n" +
-            "folded_in_comment: aaa (bbb" + "\r\n" +
+            "Folded_in_Comment: aaa (bbb" + "\r\n" +
             "   ccc) ddd" + "\r\n" +
-            #"folded_in_quote: aaa "bbb"# + "\r\n" +
+            #"Folded_in_Quote: aaa "bbb"# + "\r\n" +
             #"   ccc" ddd"# + "\r\n" +
-            "nested_comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
-            #"escaped_comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
-            #"quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
-            #"quoted_in_comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
-            "no_space_with_separator:aaa bbb ccc" + "\r\n" +
-            "multi_space_with_separator:   aaa bbb ccc" + "\r\n" +
-            "tab_with_separator:\t\taaa bbb ccc" + "\r\n" +
-            "trailing_space: aaa bbb ccc \t \t" + "\r\n" +
-            "duplicated_field: aaa bbb" + "\r\n" +
-            "duplicated_field: ccc ddd" + "\r\n" +
+            "Nested_Comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
+            #"Escaped_Comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
+            #"Quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
+            #"Quoted_in_Comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
+            "No_Space_with_Separator:aaa bbb ccc" + "\r\n" +
+            "Multi_Space_with_Separator:   aaa bbb ccc" + "\r\n" +
+            "Tab_with_Separator:\t\taaa bbb ccc" + "\r\n" +
+            "Trailing_Space: aaa bbb ccc \t \t" + "\r\n" +
+            "Duplicated_Field: aaa bbb" + "\r\n" +
+            "Duplicated_Field: ccc ddd" + "\r\n" +
             "\r\n" +
             "\r\n" +
-            "body" + "\r\n" +
-            #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
-            #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
-            #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
-            "folded: aaa" + "\r\n" +
+            "Body" + "\r\n" +
+            #"Quoted_Pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
+            #"Quoted_Pair_in_Comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
+            #"Quoted_Pair_in_Quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
+            "Folded: aaa" + "\r\n" +
             "   bbb ccc" + "\r\n" +
-            "tab_folded: aaa" + "\r\n" +
+            "Tab_Folded: aaa" + "\r\n" +
             "\t \t bbb ccc" + "\r\n" +
-            "folded_in_comment: aaa (bbb" + "\r\n" +
+            "Folded_in_Comment: aaa (bbb" + "\r\n" +
             "   ccc) ddd" + "\r\n" +
-            #"folded_in_quote: aaa "bbb"# + "\r\n" +
+            #"Folded_in_Quote: aaa "bbb"# + "\r\n" +
             #"   ccc" ddd"# + "\r\n" +
-            "nested_comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
-            #"escaped_comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
-            #"quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
-            #"quoted_in_comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
-            "no_space_with_separator:aaa bbb ccc" + "\r\n" +
-            "multi_space_with_separator:   aaa bbb ccc" + "\r\n" +
-            "tab_with_separator:\t\taaa bbb ccc" + "\r\n" +
-            "trailing_space: aaa bbb ccc \t \t" + "\r\n" +
-            "duplicated_field: aaa bbb" + "\r\n" +
-            "duplicated_field: ccc ddd" + "\r\n" +
+            "Nested_Comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
+            #"Escaped_Comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
+            #"Quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
+            #"Quoted_in_Comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
+            "No_Space_with_Separator:aaa bbb ccc" + "\r\n" +
+            "Multi_Space_with_Separator:   aaa bbb ccc" + "\r\n" +
+            "Tab_with_Separator:\t\taaa bbb ccc" + "\r\n" +
+            "Trailing_Space: aaa bbb ccc \t \t" + "\r\n" +
+            "Duplicated_Field: aaa bbb" + "\r\n" +
+            "Duplicated_Field: ccc ddd" + "\r\n" +
             "\r\n" +
-            "end" + "\r\n"
+            "End" + "\r\n"
         
         let parser = DefaultSmtpParser()
         let (header, body) = parser.parseData(data)
         
-        #expect(header["QUOTED_PAIR"] == [#"aaa \a \b \c \( \) \" \\ bbb"#])
-        #expect(header["QUOTED_PAIR_IN_COMMENT"] == [#"aaa (\a \b \c \( \) \" \\) bbb"#])
-        #expect(header["QUOTED_PAIR_IN_QUOTE"] == [#"aaa "\a \b \c \( \) \" \\" bbb"#])
-        #expect(header["FOLDED"] == ["aaa   bbb ccc"])
-        #expect(header["TAB_FOLDED"] == ["aaa\t \t bbb ccc"])
-        #expect(header["FOLDED_IN_COMMENT"] == ["aaa (bbb   ccc) ddd"])
-        #expect(header["FOLDED_IN_QUOTE"] == [#"aaa "bbb   ccc" ddd"#])
-        #expect(header["NESTED_COMMENT"] == ["aaa (bbb (ccc (()ddd))) eee"])
-        #expect(header["ESCAPED_COMMENT"] == [#"aaa \(bbb\) (ccc \) ddd) eee"#])
-        #expect(header["QUOTED"] == [#"aaa "bbb (ccc) \"ddd\" eee" fff"#])
-        #expect(header["QUOTED_IN_COMMENT"] == [#"aaa (bbb "ccc" ddd) eee"#])
-        #expect(header["NO_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
-        #expect(header["MULTI_SPACE_WITH_SEPARATOR"] == ["aaa bbb ccc"])
-        #expect(header["TAB_WITH_SEPARATOR"] == ["aaa bbb ccc"])
-        #expect(header["TRAILING_SPACE"] == ["aaa bbb ccc \t \t"])
-        #expect(header["DUPLICATED_FIELD"] == ["aaa bbb", "ccc ddd"])
+        #expect(header["Quoted_Pair"] == [#"aaa \a \b \c \( \) \" \\ bbb"#])
+        #expect(header["Quoted_Pair_in_Comment"] == [#"aaa (\a \b \c \( \) \" \\) bbb"#])
+        #expect(header["Quoted_Pair_in_Quote"] == [#"aaa "\a \b \c \( \) \" \\" bbb"#])
+        #expect(header["Folded"] == ["aaa   bbb ccc"])
+        #expect(header["Tab_Folded"] == ["aaa\t \t bbb ccc"])
+        #expect(header["Folded_in_Comment"] == ["aaa (bbb   ccc) ddd"])
+        #expect(header["Folded_in_Quote"] == [#"aaa "bbb   ccc" ddd"#])
+        #expect(header["Nested_Comment"] == ["aaa (bbb (ccc (()ddd))) eee"])
+        #expect(header["Escaped_Comment"] == [#"aaa \(bbb\) (ccc \) ddd) eee"#])
+        #expect(header["Quoted"] == [#"aaa "bbb (ccc) \"ddd\" eee" fff"#])
+        #expect(header["Quoted_in_Comment"] == [#"aaa (bbb "ccc" ddd) eee"#])
+        #expect(header["No_Space_with_Separator"] == ["aaa bbb ccc"])
+        #expect(header["Multi_Space_with_Separator"] == ["aaa bbb ccc"])
+        #expect(header["Tab_with_Separator"] == ["aaa bbb ccc"])
+        #expect(header["Trailing_Space"] == ["aaa bbb ccc \t \t"])
+        #expect(header["Duplicated_Field"] == ["aaa bbb", "ccc ddd"])
         
         let expect =
             "\r\n" +
-            "body" + "\r\n" +
-            #"quoted_pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
-            #"quoted_pair_in_comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
-            #"quoted_pair_in_quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
-            "folded: aaa" + "\r\n" +
+            "Body" + "\r\n" +
+            #"Quoted_Pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
+            #"Quoted_Pair_in_Comment: aaa (\a \b \c \( \) \" \\) bbb"# + "\r\n" +
+            #"Quoted_Pair_in_Quote: aaa "\a \b \c \( \) \" \\" bbb"# + "\r\n" +
+            "Folded: aaa" + "\r\n" +
             "   bbb ccc" + "\r\n" +
-            "tab_folded: aaa" + "\r\n" +
+            "Tab_Folded: aaa" + "\r\n" +
             "\t \t bbb ccc" + "\r\n" +
-            "folded_in_comment: aaa (bbb" + "\r\n" +
+            "Folded_in_Comment: aaa (bbb" + "\r\n" +
             "   ccc) ddd" + "\r\n" +
-            #"folded_in_quote: aaa "bbb"# + "\r\n" +
+            #"Folded_in_Quote: aaa "bbb"# + "\r\n" +
             #"   ccc" ddd"# + "\r\n" +
-            "nested_comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
-            #"escaped_comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
-            #"quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
-            #"quoted_in_comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
-            "no_space_with_separator:aaa bbb ccc" + "\r\n" +
-            "multi_space_with_separator:   aaa bbb ccc" + "\r\n" +
-            "tab_with_separator:\t\taaa bbb ccc" + "\r\n" +
-            "trailing_space: aaa bbb ccc \t \t" + "\r\n" +
-            "duplicated_field: aaa bbb" + "\r\n" +
-            "duplicated_field: ccc ddd" + "\r\n" +
+            "Nested_Comment: aaa (bbb (ccc (()ddd))) eee" + "\r\n" +
+            #"Escaped_Comment: aaa \(bbb\) (ccc \) ddd) eee"# + "\r\n" +
+            #"Quoted: aaa "bbb (ccc) \"ddd\" eee" fff"# + "\r\n" +
+            #"Quoted_in_Comment: aaa (bbb "ccc" ddd) eee"# + "\r\n" +
+            "No_Space_with_Separator:aaa bbb ccc" + "\r\n" +
+            "Multi_Space_with_Separator:   aaa bbb ccc" + "\r\n" +
+            "Tab_with_Separator:\t\taaa bbb ccc" + "\r\n" +
+            "Trailing_Space: aaa bbb ccc \t \t" + "\r\n" +
+            "Duplicated_Field: aaa bbb" + "\r\n" +
+            "Duplicated_Field: ccc ddd" + "\r\n" +
             "\r\n" +
-            "end" + "\r\n"
+            "End" + "\r\n"
         #expect(body == expect)
     }
     
@@ -126,12 +126,12 @@ struct SmtpParserTests {
     }
     
     @Test func testParseData_noBody() async throws {
-        let data = "subject: test" + "\r\n"
+        let data = "Subject: test" + "\r\n"
         
         let parser = DefaultSmtpParser()
         let (header, body) = parser.parseData(data)
         
-        #expect(header["SUBJECT"] == ["test"])
+        #expect(header["Subject"] == ["test"])
         #expect(body == "")
     }
     
@@ -354,7 +354,7 @@ struct SmtpParserTests {
     @Test func testParseMimeBody() async throws {
         let parser = DefaultSmtpParser()
         let header = [
-            "CONTENT-TYPE": [#" text/html; charset="UTF-8"; name=index.html"#],
+            "CONTENT-TYPE": [#" TEXT/HTML; charset="UTF-8"; name=index.html"#],
             "CONTENT-TRANSFER-ENCODING": ["7BIT"]
         ]
         let body = "test"
@@ -371,7 +371,7 @@ struct SmtpParserTests {
         let body = "test"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/PLAIN")
+        #expect(result.contentType == "text/plain")
         #expect(result.charset == "us-ascii")
         #expect(result.body == "test")
     }
@@ -389,7 +389,7 @@ struct SmtpParserTests {
         
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "UTF-8")
         #expect(result.body == "テスト")
     }
@@ -406,7 +406,7 @@ struct SmtpParserTests {
             """
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "UTF-8")
         #expect(result.body == "テスト")
     }
@@ -420,7 +420,7 @@ struct SmtpParserTests {
         let body = "g2WDWINn"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "Shift_JIS")
         #expect(result.body == "テスト")
     }
@@ -434,7 +434,7 @@ struct SmtpParserTests {
         let body = "pcaluaXI"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "EUC-JP")
         #expect(result.body == "テスト")
     }
@@ -448,7 +448,7 @@ struct SmtpParserTests {
         let body = "=A5=C6=A5=B9=A5=C8"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "EUC-JP")
         #expect(result.body == "テスト")
     }
@@ -462,7 +462,7 @@ struct SmtpParserTests {
         let body = "GyRCJUYlOSVIGyhC"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "iso-2022-jp")
         #expect(result.body == "テスト")
     }
@@ -481,7 +481,7 @@ struct SmtpParserTests {
         
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
-        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.contentType == "text/html")
         #expect(result.charset == "iso-2022-jp")
         #expect(result.body == "あああ\r\nいいい\r\nううう")
     }
@@ -570,7 +570,7 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
-        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
         #expect(result.filename == "test.json")
         
@@ -588,7 +588,7 @@ struct SmtpParserTests {
         let body = #"{"key1":"=E3=83=86=E3=82=B9=E3=83=88","key2":111}"#
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
-        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
         #expect(result.filename == "test.json")
         
@@ -606,7 +606,7 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
-        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
         #expect(result.filename == "testテストtest.json")
         
@@ -623,7 +623,7 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
-        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
         #expect(result.filename == "test.json")
         
@@ -640,7 +640,7 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
-        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
         #expect(result.filename == "テスト")
         
@@ -651,15 +651,15 @@ struct SmtpParserTests {
     @Test func testParseMimeBody_checkSplitParams() async throws {
         let parser = DefaultSmtpParser()
         let header = [
-            "CONTENT-TYPE": [#"    application  / json; ;  charset = "utf-8";  name =  " test; test " "#],
+            "CONTENT-TYPE": [#"    application  / json; ;  charset = "utf-8";  name =  " test; =test " "#],
             "CONTENT-TRANSFER-ENCODING": ["BASE64"]
         ]
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
-        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
-        #expect(result.filename == " test; test ")
+        #expect(result.filename == " test; =test ")
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
         #expect(json == #"{"key1":"value","key2":111}"#)

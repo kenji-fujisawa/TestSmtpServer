@@ -393,11 +393,11 @@ class SmtpSession: Session {
             }
             
             let (header, body) = parser.parseData(mail.data)
-            let from = toAddressList(header["FROM"]?[0] ?? "").first
-            let to = toAddressList(header["TO"]?[0] ?? "")
-            let cc = toAddressList(header["CC"]?[0] ?? "")
-            let subject = parseMimeHeader(header["SUBJECT"]?[0] ?? "")
-            let sent = toDateTime(header["DATE"]?[0] ?? "")
+            let from = toAddressList(header[caseInsensitive: "from"]?[0] ?? "").first
+            let to = toAddressList(header[caseInsensitive: "to"]?[0] ?? "")
+            let cc = toAddressList(header[caseInsensitive: "cc"]?[0] ?? "")
+            let subject = parseMimeHeader(header[caseInsensitive: "subject"]?[0] ?? "")
+            let sent = toDateTime(header[caseInsensitive: "date"]?[0] ?? "")
             let mimeBody = parser.parseMimeBody(header: header, body: body)
             
             do {
