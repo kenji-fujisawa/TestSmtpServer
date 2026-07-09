@@ -112,10 +112,11 @@ struct SmtpParserTests {
     }
     
     @Test func testParseData_noHeader() async throws {
-        let data =
-            "\r\n" +
-            "\r\n" +
-            "body" + "\r\n"
+        let data = """
+            \r\n\
+            \r\n\
+            body\r\n
+            """
         
         let parser = DefaultSmtpParser()
         let (header, body) = parser.parseData(data)
@@ -145,15 +146,16 @@ struct SmtpParserTests {
     }
     
     @Test func testParseAddressList() async throws {
-        let list =
-            "aaa@test.com," +
-            "bbb <bbb@test.com>," +
-            "group1: ccc@test.com, ddd <ddd@test.com>;," +
-            "eee <eee@test.com>," +
-            "group2: fff <fff@test.com>;," +
-            "group3: ggg <ggg@test.com>;," +
-            "hhh@test.com," +
-            "iii <iii@test.com>"
+        let list = """
+            aaa@test.com,\
+            bbb <bbb@test.com>,\
+            group1: ccc@test.com, ddd <ddd@test.com>;,\
+            eee <eee@test.com>,\
+            group2: fff <fff@test.com>;,\
+            group3: ggg <ggg@test.com>;,\
+            hhh@test.com,\
+            iii <iii@test.com>
+            """
         
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
