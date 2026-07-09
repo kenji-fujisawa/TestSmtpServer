@@ -360,6 +360,8 @@ struct SmtpParserTests {
         let body = "test"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "UTF-8")
         #expect(result.body == "test")
     }
     
@@ -369,6 +371,8 @@ struct SmtpParserTests {
         let body = "test"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/PLAIN")
+        #expect(result.charset == "us-ascii")
         #expect(result.body == "test")
     }
     
@@ -385,6 +389,8 @@ struct SmtpParserTests {
         
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "UTF-8")
         #expect(result.body == "テスト")
     }
     
@@ -400,6 +406,8 @@ struct SmtpParserTests {
             """
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "UTF-8")
         #expect(result.body == "テスト")
     }
     
@@ -412,6 +420,8 @@ struct SmtpParserTests {
         let body = "g2WDWINn"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "Shift_JIS")
         #expect(result.body == "テスト")
     }
     
@@ -424,6 +434,8 @@ struct SmtpParserTests {
         let body = "pcaluaXI"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "EUC-JP")
         #expect(result.body == "テスト")
     }
     
@@ -436,6 +448,8 @@ struct SmtpParserTests {
         let body = "=A5=C6=A5=B9=A5=C8"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "EUC-JP")
         #expect(result.body == "テスト")
     }
     
@@ -448,6 +462,8 @@ struct SmtpParserTests {
         let body = "GyRCJUYlOSVIGyhC"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "iso-2022-jp")
         #expect(result.body == "テスト")
     }
     
@@ -465,6 +481,8 @@ struct SmtpParserTests {
         
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .text)
+        #expect(result.contentType == "TEXT/HTML")
+        #expect(result.charset == "iso-2022-jp")
         #expect(result.body == "あああ\r\nいいい\r\nううう")
     }
     
@@ -552,6 +570,8 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
+        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.charset == "utf-8")
         #expect(result.filename == "test.json")
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
@@ -568,6 +588,8 @@ struct SmtpParserTests {
         let body = #"{"key1":"=E3=83=86=E3=82=B9=E3=83=88","key2":111}"#
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
+        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.charset == "utf-8")
         #expect(result.filename == "test.json")
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
@@ -584,6 +606,8 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
+        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.charset == "utf-8")
         #expect(result.filename == "testテストtest.json")
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
@@ -599,6 +623,8 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
+        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.charset == "utf-8")
         #expect(result.filename == "test.json")
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
@@ -614,7 +640,26 @@ struct SmtpParserTests {
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
         let result = parser.parseMimeBody(header: header, body: body)
         #expect(result.type == .data)
+        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.charset == "utf-8")
         #expect(result.filename == "テスト")
+        
+        let json = String(data: result.data ?? Data(), encoding: .utf8)
+        #expect(json == #"{"key1":"value","key2":111}"#)
+    }
+    
+    @Test func testParseMimeBody_checkSplitParams() async throws {
+        let parser = DefaultSmtpParser()
+        let header = [
+            "CONTENT-TYPE": [#"    application  / json; ;  charset = "utf-8";  name =  " test; test " "#],
+            "CONTENT-TRANSFER-ENCODING": ["BASE64"]
+        ]
+        let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
+        let result = parser.parseMimeBody(header: header, body: body)
+        #expect(result.type == .data)
+        #expect(result.contentType == "APPLICATION/JSON")
+        #expect(result.charset == "utf-8")
+        #expect(result.filename == " test; test ")
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
         #expect(json == #"{"key1":"value","key2":111}"#)
