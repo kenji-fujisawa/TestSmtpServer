@@ -318,16 +318,9 @@ class DefaultSmtpParser: SmtpParser {
     }
     
     private func toEncoding(_ charset: String) -> String.Encoding {
-        let charset = charset.uppercased()
-        if charset.contains("ISO-2022-JP") {
-            return String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.ISO_2022_JP.rawValue)))
-        } else if charset.contains("SHIFT_JIS") || charset.contains("SJIS") {
-            return .shiftJIS
-        } else if charset.contains("EUC-JP") {
-            return .japaneseEUC
-        } else {
-            return .utf8
-        }
+        let cfEncoding = CFStringConvertIANACharSetNameToEncoding(charset as CFString)
+        let nsEncoding = CFStringConvertEncodingToNSStringEncoding(cfEncoding)
+        return String.Encoding(rawValue: nsEncoding)
     }
     
     func parseMimeBody(header: [String: [String]], body: String) -> MimeBody {
