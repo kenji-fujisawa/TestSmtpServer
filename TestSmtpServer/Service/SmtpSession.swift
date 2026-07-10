@@ -374,48 +374,30 @@ class SmtpSession: Session {
     
     private func handleDataContent(_ line: String) async {
         if line == "." {
-            let removeComment = parser.removeCommentAndQuote
-            let parseMimeHeader = { (value: String) in
-                self.parser.parseMimeHeader(removeComment(value))
-            }
-            let toAddressList = { (value: String) in
-                self.parser.parseAddressList(value)
-                    .flatMap { $0.group }
-                    .map {
-                        TestSmtpServer.Mail.Address(
-                            name: parseMimeHeader($0.name),
-                            address: removeComment($0.address)
-                        )
-                    }
-            }
-            let toDateTime = { (value: String) in
-                self.parser.parseDateTime(removeComment(value))
-            }
-            
-            let (header, body) = parser.parseData(mail.data)
-            let from = toAddressList(header[caseInsensitive: "from"]?[0] ?? "").first
-            let to = toAddressList(header[caseInsensitive: "to"]?[0] ?? "")
-            let cc = toAddressList(header[caseInsensitive: "cc"]?[0] ?? "")
-            let subject = parseMimeHeader(header[caseInsensitive: "subject"]?[0] ?? "")
-            let sent = toDateTime(header[caseInsensitive: "date"]?[0] ?? "")
-            let mimeBody = parser.parseMimeBody(header: header, body: body)
+            let content = parser.parse(mail.data)
             
             do {
                 let mail = TestSmtpServer.Mail(
                     mail: self.mail.mail,
                     rcpt: self.mail.rcpt,
                     data: self.mail.data,
-                    from: from,
-                    to: to,
-                    cc: cc,
-                    subject: subject,
-                    body: mimeBody.flatten
+                    from: content.from
+                        .first
+                        .map { TestSmtpServer.Mail.Address(name: $0.name, address: $0.address) },
+                    to: content.to
+                        .flatMap { $0.addresses }
+                        .map { TestSmtpServer.Mail.Address(name: $0.name, address: $0.address) },
+                    cc: content.cc
+                        .flatMap { $0.addresses }
+                        .map { TestSmtpServer.Mail.Address(name: $0.name, address: $0.address) },
+                    subject: content.subject,
+                    body: content.body.flatten
                         .filter { $0.type == .text }
                         .map { $0.body },
-                    attachments: mimeBody.flatten
+                    attachments: content.body.flatten
                         .filter { $0.type == .data }
                         .map { TestSmtpServer.Mail.Attachment(filename: $0.filename, data: $0.data ?? Data()) },
-                    sent: sent,
+                    sent: content.date,
                     received: .now
                 )
                 try mailRepository.add(mail)

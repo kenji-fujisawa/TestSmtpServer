@@ -8,7 +8,27 @@
 import Foundation
 import RegexBuilder
 
-struct MimeBody {
+struct Content {
+    struct Address {
+        var name: String = ""
+        var address: String = ""
+    }
+    
+    struct AddressGroup {
+        var name: String = ""
+        var addresses: [Address] = []
+    }
+    
+    var header: [String: [String]] = [:]
+    var from: [Address] = []
+    var to: [AddressGroup] = []
+    var cc: [AddressGroup] = []
+    var subject: String = ""
+    var date: Date? = nil
+    var body: MimeContent = MimeContent()
+}
+
+struct MimeContent {
     enum ContentType {
         case unknown
         case text
@@ -19,14 +39,15 @@ struct MimeBody {
     }
     
     var type: ContentType = .unknown
+    var header: [String: [String]] = [:]
     var contentType: String = ""
     var charset: String = ""
     var body: String = ""
     var filename: String = ""
     var data: Data? = nil
-    var children: [MimeBody] = []
+    var children: [MimeContent] = []
     
-    var flatten: [MimeBody] {
+    var flatten: [MimeContent] {
         type == .mixed || type == .alternative || type == .related
         ? children.flatMap { $0.flatten }
         : [self]
@@ -34,16 +55,51 @@ struct MimeBody {
 }
 
 protocol SmtpParser {
+    func parse(_ data: String) -> Content
     func parseData(_ data: String) -> (header: [String: [String]], body: String)
     func removeCommentAndQuote(_ value: String) -> String
-    func parseAddressList(_ addressList: String) -> [(groupName: String, group: [(name: String, address: String)])]
+    func parseAddressList(_ addressList: String) -> [Content.AddressGroup]
     func parseDateTime(_ value: String) -> Date?
     func parseQuotedPrintable(_ value: String) -> Data
     func parseMimeHeader(_ value: String) -> String
-    func parseMimeBody(header: [String: [String]], body: String) -> MimeBody
+    func parseMimeBody(header: [String: [String]], body: String) -> MimeContent
 }
 
 class DefaultSmtpParser: SmtpParser {
+    func parse(_ data: String) -> Content {
+        let parseAddressList = { (addressList: String) in
+            self.parseAddressList(addressList)
+                .map {
+                    Content.AddressGroup(
+                        name: self.parseMimeHeader(self.removeCommentAndQuote($0.name)),
+                        addresses: $0.addresses.map {
+                            Content.Address(
+                                name: self.parseMimeHeader(self.removeCommentAndQuote($0.name)),
+                                address: self.removeCommentAndQuote($0.address)
+                            )
+                        }
+                    )
+                }
+        }
+        
+        let (header, body) = parseData(data)
+        let from = parseAddressList(header[caseInsensitive: "from"]?[0] ?? "").flatMap { $0.addresses }
+        let to = parseAddressList(header[caseInsensitive: "to"]?[0] ?? "")
+        let cc = parseAddressList(header[caseInsensitive: "cc"]?[0] ?? "")
+        let subject = parseMimeHeader(removeCommentAndQuote(header[caseInsensitive: "subject"]?[0] ?? ""))
+        let date = parseDateTime(removeCommentAndQuote(header[caseInsensitive: "date"]?[0] ?? ""))
+        let mimeBody = parseMimeBody(header: header, body: body)
+        return Content(
+            header: header,
+            from: from,
+            to: to,
+            cc: cc,
+            subject: subject,
+            date: date,
+            body: mimeBody
+        )
+    }
+    
     func parseData(_ data: String) -> (header: [String: [String]], body: String) {
         let (header, body) = splitData(data)
         return (parseHeader(unfold(header)), body)
@@ -126,13 +182,13 @@ class DefaultSmtpParser: SmtpParser {
         return result
     }
     
-    func parseAddressList(_ addressList: String) -> [(groupName: String, group: [(name: String, address: String)])] {
-        var result: [(String, [(String, String)])] = []
+    func parseAddressList(_ addressList: String) -> [Content.AddressGroup] {
+        var result: [Content.AddressGroup] = []
         
         let groups = splitAddressGroup(addressList)
         for (groupName, groupList) in groups {
-            let namedAddressList = groupList.map { parseAddress($0) }
-            result.append((groupName, namedAddressList))
+            let addresses = groupList.map { parseAddress($0) }
+            result.append(Content.AddressGroup(name: groupName, addresses: addresses))
         }
         
         return result
@@ -211,11 +267,11 @@ class DefaultSmtpParser: SmtpParser {
         return groups
     }
     
-    private func parseAddress(_ namedAddress: String) -> (String, String) {
+    private func parseAddress(_ namedAddress: String) -> Content.Address {
         guard var begin = namedAddress.firstIndex(of: "<"),
               let end = namedAddress.firstIndex(of: ">") else {
             let address = namedAddress.trimmingCharacters(in: .whitespaces)
-            return ("", address)
+            return Content.Address(name: "", address: address)
         }
         
         let name = namedAddress[namedAddress.startIndex..<begin].trimmingCharacters(in: .whitespaces)
@@ -223,7 +279,7 @@ class DefaultSmtpParser: SmtpParser {
         begin = namedAddress.index(begin, offsetBy: 1)
         let address = namedAddress[begin..<end].trimmingCharacters(in: .whitespaces)
         
-        return (name, address)
+        return Content.Address(name: name, address: address)
     }
     
     func parseDateTime(_ value: String) -> Date? {
@@ -323,11 +379,11 @@ class DefaultSmtpParser: SmtpParser {
         return String.Encoding(rawValue: nsEncoding)
     }
     
-    func parseMimeBody(header: [String: [String]], body: String) -> MimeBody {
+    func parseMimeBody(header: [String: [String]], body: String) -> MimeContent {
         let contentType = header[caseInsensitive: "Content-Type"]?.first ?? "text/plain; charset=us-ascii"
         let (contentTypeValue, contentTypeParams) = parseContentHeader(contentType)
         let types = contentTypeValue.split(separator: "/")
-        guard types.count == 2 else { return MimeBody() }
+        guard types.count == 2 else { return MimeContent() }
         let type = types[0].lowercased()
         let subtype = types[1].lowercased()
         
@@ -349,25 +405,40 @@ class DefaultSmtpParser: SmtpParser {
                 }
             }
             
-            return MimeBody(type: .text, contentType: contentTypeValue, charset: charset, body: decoded ?? "")
+            return MimeContent(
+                type: .text,
+                header: header,
+                contentType: contentTypeValue,
+                charset: charset,
+                body: decoded ?? ""
+            )
         } else if type == "multipart" {
-            guard let boundary = contentTypeParams[caseInsensitive: "boundary"] else { return MimeBody() }
+            guard let boundary = contentTypeParams[caseInsensitive: "boundary"] else { return MimeContent(header: header, body: body) }
             
-            var children: [MimeBody] = []
+            var children: [MimeContent] = []
             let sections = splitSections(body, boundary: boundary)
             for section in sections {
-                let (header, body) = splitData(section)
-                let child = parseMimeBody(header: parseHeader(header), body: body)
+                let (header, body) = parseData(section)
+                let child = parseMimeBody(header: header, body: body)
                 children.append(child)
             }
             
-            if subtype == "mixed" {
-                return MimeBody(type: .mixed, contentType: contentTypeValue, children: children)
+            let type: MimeContent.ContentType = if subtype == "mixed" {
+                .mixed
             } else if subtype == "alternative" {
-                return MimeBody(type: .alternative, contentType: contentTypeValue, children: children)
+                .alternative
             } else if subtype == "related" {
-                return MimeBody(type: .related, contentType: contentTypeValue, children: children)
+                .related
+            } else {
+                .unknown
             }
+            
+            return MimeContent(
+                type: type,
+                header: header,
+                contentType: contentTypeValue,
+                children: children
+            )
         } else {
             let charset = contentTypeParams[caseInsensitive: "charset"] ?? ""
             
@@ -389,10 +460,15 @@ class DefaultSmtpParser: SmtpParser {
                 data = parseQuotedPrintable(body)
             }
             
-            return MimeBody(type: .data, contentType: contentTypeValue, charset: charset, filename: filename, data: data)
+            return MimeContent(
+                type: .data,
+                header: header,
+                contentType: contentTypeValue,
+                charset: charset,
+                filename: filename,
+                data: data
+            )
         }
-        
-        return MimeBody()
     }
     
     private func parseContentHeader(_ header: String) -> (value: String, params: [String: String]) {
@@ -400,16 +476,27 @@ class DefaultSmtpParser: SmtpParser {
         var buf = String()
         var quoted = false
         var escaped = false
+        var depth = 0
         for char in header {
             if escaped {
-                buf.append(char)
+                if depth == 0 { buf.append(char) }
                 escaped = false
             } else if quoted && char == "\\" {
                 escaped = true
             } else if quoted && char == "\"" {
                 quoted = false
+            } else if quoted {
+                buf.append(char)
+            } else if depth > 0 && char == ")" {
+                depth -= 1
+            } else if depth > 0 && char == "(" {
+                depth += 1
+            } else if depth > 0 {
+                continue
             } else if char == "\"" {
                 quoted = true
+            } else if char == "(" {
+                depth = 1
             } else if !quoted && char == " " {
                 continue
             } else if !quoted && char == ";" {

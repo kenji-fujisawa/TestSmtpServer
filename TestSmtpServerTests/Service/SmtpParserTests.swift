@@ -12,6 +12,146 @@ import Testing
 
 struct SmtpParserTests {
 
+    @Test func testParse() async throws {
+        let data = """
+            From:         =?Shift_JIS?Q?=8D=B7=8Fo=90l?=(comment) \r\n\
+                          <"from1"@test.com> ,\r\n\
+                          from2@( \r\n\
+                          )test.com\r\n\
+            To:           =?iso-2022-jp?b?GyRCMDhAaBsoQg==?=<to1@test.com>,\r\n\
+                          =?euc-jp?B?pbCl66G8pdc=?=: \r\n\
+                          to2@test.com,\r\n\
+                          =?utf-8?q?=E9=80=81=E4=BF=A1=E5=85=88?=<to3@test.com>; \r\n\
+            Cc:           cc@test.com\r\n\
+            Subject:      test =?utf-8?b?44K/44Kk44OI44Or?=(comment)   (\r\n\
+                          )subject \r\n\
+            Date:         Fri, 26 Jun \r\n\
+                             2026 11:30:50 +0900 (comment) \r\n\
+            Content-Type: multipart/mixed; (comment) boundary="aaaaa" \r\n\
+            \r\n\
+            --aaaaa\r\n\
+            Content-Type: multipart/alternative; boundary="bbbbb"\r\n\
+            \r\n\
+            --bbbbb\r\n\
+            Content-Type:              Text/Plain ;  (\r\n\
+                                       )charset="utf-8" \r\n\
+            Content-Transfer-Encoding: base64 \r\n\
+            \r\n\
+            5pys5paHCuOBguOBgu\r\n\
+            OBggrjgYTjgYTjgYQ=\r\n\
+            --bbbbb\r\n\
+            Content-Type:              Text/HTML ; charset="Shift_JIS" \r\n\
+            Content-Transfer-Encoding: Quoted-Printable \r\n\
+            \r\n\
+            <html>=0A<body>=96{=\r\n\
+            =95=B6</body>=0A</html>=\r\n\
+            --bbbbb--\r\n\
+            --aaaaa\r\n\
+            Content-Type:              application / json ; charset="utf-8" ; name="test.txt" ; \r\n\
+            Content-Transfer-Encoding: Quoted-Printable \r\n\
+            Content-Disposition:       attachment; filename="=?utf-8?q?test?=.json" \r\n\
+            \r\n\
+            {"key":"value"}=\r\n\
+            --aaaaa--\r\n\
+            
+            """
+        
+        let parser = DefaultSmtpParser()
+        let result = parser.parse(data)
+        #expect(result.header.count == 6)
+        #expect(result.header["From"] == ["""
+            =?Shift_JIS?Q?=8D=B7=8Fo=90l?=(comment) \
+                          <"from1"@test.com> ,\
+                          from2@( \
+                          )test.com
+            """])
+        #expect(result.header["To"] == ["""
+            =?iso-2022-jp?b?GyRCMDhAaBsoQg==?=<to1@test.com>,\
+                          =?euc-jp?B?pbCl66G8pdc=?=: \
+                          to2@test.com,\
+                          =?utf-8?q?=E9=80=81=E4=BF=A1=E5=85=88?=<to3@test.com>; 
+            """])
+        #expect(result.header["Cc"] == ["cc@test.com"])
+        #expect(result.header["Subject"] == ["""
+            test =?utf-8?b?44K/44Kk44OI44Or?=(comment)   (\
+                          )subject 
+            """])
+        #expect(result.header["Date"] == ["""
+            Fri, 26 Jun \
+                             2026 11:30:50 +0900 (comment) 
+            """])
+        #expect(result.header["Content-Type"] == [#"multipart/mixed; (comment) boundary="aaaaa" "#])
+        
+        #expect(result.from.count == 2)
+        #expect(result.from[0].name == "差出人")
+        #expect(result.from[0].address == "from1@test.com")
+        #expect(result.from[1].name == "")
+        #expect(result.from[1].address == "from2@test.com")
+        
+        #expect(result.to.count == 2)
+        #expect(result.to[0].name == "")
+        #expect(result.to[0].addresses.count == 1)
+        #expect(result.to[0].addresses[0].name == "宛先")
+        #expect(result.to[0].addresses[0].address == "to1@test.com")
+        #expect(result.to[1].name == "グループ")
+        #expect(result.to[1].addresses.count == 2)
+        #expect(result.to[1].addresses[0].name == "")
+        #expect(result.to[1].addresses[0].address == "to2@test.com")
+        #expect(result.to[1].addresses[1].name == "送信先")
+        #expect(result.to[1].addresses[1].address == "to3@test.com")
+        
+        #expect(result.cc.count == 1)
+        #expect(result.cc[0].name == "")
+        #expect(result.cc[0].addresses.count == 1)
+        #expect(result.cc[0].addresses[0].name == "")
+        #expect(result.cc[0].addresses[0].address == "cc@test.com")
+        
+        #expect(result.subject == "test タイトル   subject ")
+        
+        #expect(result.date?.equals("2026-06-26 11:30:50") == true)
+        
+        #expect(result.body.type == .mixed)
+        #expect(result.body.header.count == 6)
+        #expect(result.body.header == result.header)
+        #expect(result.body.contentType == "multipart/mixed")
+        #expect(result.body.children.count == 2)
+        
+        #expect(result.body.children[0].type == .alternative)
+        #expect(result.body.children[0].header.count == 1)
+        #expect(result.body.children[0].header["Content-Type"] == [#"multipart/alternative; boundary="bbbbb""#])
+        #expect(result.body.children[0].contentType == "multipart/alternative")
+        #expect(result.body.children[0].children.count == 2)
+        
+        #expect(result.body.children[0].children[0].type == .text)
+        #expect(result.body.children[0].children[0].header.count == 2)
+        #expect(result.body.children[0].children[0].header["Content-Type"] == ["""
+            Text/Plain ;  (\
+                                       )charset="utf-8" 
+            """])
+        #expect(result.body.children[0].children[0].header["Content-Transfer-Encoding"] == ["base64 "])
+        #expect(result.body.children[0].children[0].contentType == "Text/Plain")
+        #expect(result.body.children[0].children[0].charset == "utf-8")
+        #expect(result.body.children[0].children[0].body == "本文\nあああ\nいいい")
+        
+        #expect(result.body.children[0].children[1].type == .text)
+        #expect(result.body.children[0].children[1].header.count == 2)
+        #expect(result.body.children[0].children[1].header["Content-Type"] == [#"Text/HTML ; charset="Shift_JIS" "#])
+        #expect(result.body.children[0].children[1].header["Content-Transfer-Encoding"] == ["Quoted-Printable "])
+        #expect(result.body.children[0].children[1].contentType == "Text/HTML")
+        #expect(result.body.children[0].children[1].charset == "Shift_JIS")
+        #expect(result.body.children[0].children[1].body == "<html>\n<body>本文</body>\n</html>")
+        
+        #expect(result.body.children[1].type == .data)
+        #expect(result.body.children[1].header.count == 3)
+        #expect(result.body.children[1].header["Content-Type"] == [#"application / json ; charset="utf-8" ; name="test.txt" ; "#])
+        #expect(result.body.children[1].header["Content-Transfer-Encoding"] == ["Quoted-Printable "])
+        #expect(result.body.children[1].header["Content-Disposition"] == [#"attachment; filename="=?utf-8?q?test?=.json" "#])
+        #expect(result.body.children[1].contentType == "application/json")
+        #expect(result.body.children[1].charset == "utf-8")
+        #expect(result.body.children[1].filename == "test.json")
+        #expect(String(data: result.body.children[1].data ?? Data(), encoding: .utf8) == #"{"key":"value"}"#)
+    }
+    
     @Test func testParseData() async throws {
         let data =
             #"Quoted_Pair: aaa \a \b \c \( \) \" \\ bbb"# + "\r\n" +
@@ -160,47 +300,47 @@ struct SmtpParserTests {
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
         #expect(result.count == 8)
-        #expect(result[0].groupName == "")
-        #expect(result[0].group.count == 1)
-        #expect(result[0].group[0].name == "")
-        #expect(result[0].group[0].address == "aaa@test.com")
+        #expect(result[0].name == "")
+        #expect(result[0].addresses.count == 1)
+        #expect(result[0].addresses[0].name == "")
+        #expect(result[0].addresses[0].address == "aaa@test.com")
         
-        #expect(result[1].groupName == "")
-        #expect(result[1].group.count == 1)
-        #expect(result[1].group[0].name == "bbb")
-        #expect(result[1].group[0].address == "bbb@test.com")
+        #expect(result[1].name == "")
+        #expect(result[1].addresses.count == 1)
+        #expect(result[1].addresses[0].name == "bbb")
+        #expect(result[1].addresses[0].address == "bbb@test.com")
         
-        #expect(result[2].groupName == "group1")
-        #expect(result[2].group.count == 2)
-        #expect(result[2].group[0].name == "")
-        #expect(result[2].group[0].address == "ccc@test.com")
-        #expect(result[2].group[1].name == "ddd")
-        #expect(result[2].group[1].address == "ddd@test.com")
+        #expect(result[2].name == "group1")
+        #expect(result[2].addresses.count == 2)
+        #expect(result[2].addresses[0].name == "")
+        #expect(result[2].addresses[0].address == "ccc@test.com")
+        #expect(result[2].addresses[1].name == "ddd")
+        #expect(result[2].addresses[1].address == "ddd@test.com")
         
-        #expect(result[3].groupName == "")
-        #expect(result[3].group.count == 1)
-        #expect(result[3].group[0].name == "eee")
-        #expect(result[3].group[0].address == "eee@test.com")
+        #expect(result[3].name == "")
+        #expect(result[3].addresses.count == 1)
+        #expect(result[3].addresses[0].name == "eee")
+        #expect(result[3].addresses[0].address == "eee@test.com")
         
-        #expect(result[4].groupName == "group2")
-        #expect(result[4].group.count == 1)
-        #expect(result[4].group[0].name == "fff")
-        #expect(result[4].group[0].address == "fff@test.com")
+        #expect(result[4].name == "group2")
+        #expect(result[4].addresses.count == 1)
+        #expect(result[4].addresses[0].name == "fff")
+        #expect(result[4].addresses[0].address == "fff@test.com")
         
-        #expect(result[5].groupName == "group3")
-        #expect(result[5].group.count == 1)
-        #expect(result[5].group[0].name == "ggg")
-        #expect(result[5].group[0].address == "ggg@test.com")
+        #expect(result[5].name == "group3")
+        #expect(result[5].addresses.count == 1)
+        #expect(result[5].addresses[0].name == "ggg")
+        #expect(result[5].addresses[0].address == "ggg@test.com")
         
-        #expect(result[6].groupName == "")
-        #expect(result[6].group.count == 1)
-        #expect(result[6].group[0].name == "")
-        #expect(result[6].group[0].address == "hhh@test.com")
+        #expect(result[6].name == "")
+        #expect(result[6].addresses.count == 1)
+        #expect(result[6].addresses[0].name == "")
+        #expect(result[6].addresses[0].address == "hhh@test.com")
         
-        #expect(result[7].groupName == "")
-        #expect(result[7].group.count == 1)
-        #expect(result[7].group[0].name == "iii")
-        #expect(result[7].group[0].address == "iii@test.com")
+        #expect(result[7].name == "")
+        #expect(result[7].addresses.count == 1)
+        #expect(result[7].addresses[0].name == "iii")
+        #expect(result[7].addresses[0].address == "iii@test.com")
     }
     
     @Test func testParseAddressList_group() async throws {
@@ -209,12 +349,12 @@ struct SmtpParserTests {
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
         #expect(result.count == 1)
-        #expect(result[0].groupName == "group1")
-        #expect(result[0].group.count == 2)
-        #expect(result[0].group[0].name == "")
-        #expect(result[0].group[0].address == "aaa@test.com")
-        #expect(result[0].group[1].name == "bbb")
-        #expect(result[0].group[1].address == "bbb@test.com")
+        #expect(result[0].name == "group1")
+        #expect(result[0].addresses.count == 2)
+        #expect(result[0].addresses[0].name == "")
+        #expect(result[0].addresses[0].address == "aaa@test.com")
+        #expect(result[0].addresses[1].name == "bbb")
+        #expect(result[0].addresses[1].address == "bbb@test.com")
     }
     
     @Test func testParseAddressList_addressOnly() async throws {
@@ -223,10 +363,10 @@ struct SmtpParserTests {
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
         #expect(result.count == 1)
-        #expect(result[0].groupName == "")
-        #expect(result[0].group.count == 1)
-        #expect(result[0].group[0].name == "")
-        #expect(result[0].group[0].address == "aaa@test.com")
+        #expect(result[0].name == "")
+        #expect(result[0].addresses.count == 1)
+        #expect(result[0].addresses[0].name == "")
+        #expect(result[0].addresses[0].address == "aaa@test.com")
     }
     
     @Test func testParseAddressList_namedAddress() async throws {
@@ -235,10 +375,10 @@ struct SmtpParserTests {
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
         #expect(result.count == 1)
-        #expect(result[0].groupName == "")
-        #expect(result[0].group.count == 1)
-        #expect(result[0].group[0].name == "aaa")
-        #expect(result[0].group[0].address == "aaa@test.com")
+        #expect(result[0].name == "")
+        #expect(result[0].addresses.count == 1)
+        #expect(result[0].addresses[0].name == "aaa")
+        #expect(result[0].addresses[0].address == "aaa@test.com")
     }
     
     @Test func testParseAddressList_comment() async throws {
@@ -247,10 +387,10 @@ struct SmtpParserTests {
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
         #expect(result.count == 1)
-        #expect(result[0].groupName == "")
-        #expect(result[0].group.count == 1)
-        #expect(result[0].group[0].name == #"aaa(bbb, (()ccc\) ddd))"#)
-        #expect(result[0].group[0].address == "aaa(eee)@(fff)test.com")
+        #expect(result[0].name == "")
+        #expect(result[0].addresses.count == 1)
+        #expect(result[0].addresses[0].name == #"aaa(bbb, (()ccc\) ddd))"#)
+        #expect(result[0].addresses[0].address == "aaa(eee)@(fff)test.com")
     }
     
     @Test func testParseAddressList_quote() async throws {
@@ -259,37 +399,34 @@ struct SmtpParserTests {
         let parser = DefaultSmtpParser()
         let result = parser.parseAddressList(list)
         #expect(result.count == 1)
-        #expect(result[0].groupName == "")
-        #expect(result[0].group.count == 1)
-        #expect(result[0].group[0].name == #"aaa "bbb, \"ccc\" ddd" eee"#)
-        #expect(result[0].group[0].address == #"aaa"bbb"@test.com"#)
+        #expect(result[0].name == "")
+        #expect(result[0].addresses.count == 1)
+        #expect(result[0].addresses[0].name == #"aaa "bbb, \"ccc\" ddd" eee"#)
+        #expect(result[0].addresses[0].address == #"aaa"bbb"@test.com"#)
     }
     
     @Test func testParseDateTime() async throws {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        
         let parser = DefaultSmtpParser()
         var date = parser.parseDateTime("Fri, 26 Jun 2026 11:30:50 +0900")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
+        #expect(date?.equals("2026-06-26 11:30:50") == true)
         
         date = parser.parseDateTime("26 Jun 2026 11:30 +0900")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:00")
+        #expect(date?.equals("2026-06-26 11:30:00") == true)
         
         date = parser.parseDateTime("1 Jun 2026 11:30 +0900")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-01 11:30:00")
+        #expect(date?.equals("2026-06-01 11:30:00") == true)
         
         date = parser.parseDateTime("01 Jun 2026 11:30 +0900")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-01 11:30:00")
+        #expect(date?.equals("2026-06-01 11:30:00") == true)
         
         date = parser.parseDateTime("Fri, 26 Jun 2026 11:30:50 +0000")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 20:30:50")
+        #expect(date?.equals("2026-06-26 20:30:50") == true)
         
         date = parser.parseDateTime("Fri, 26 Jun 2026 11:30:50 +09:00")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
+        #expect(date?.equals("2026-06-26 11:30:50") == true)
         
         date = parser.parseDateTime("   Fri,    26     Jun     2026    11:30:50    +0900   ")
-        #expect(formatter.string(from: date ?? .distantPast) == "2026-06-26 11:30:50")
+        #expect(date?.equals("2026-06-26 11:30:50") == true)
     }
     
     @Test func testParseQuotedPrintable() async throws {
@@ -651,7 +788,7 @@ struct SmtpParserTests {
     @Test func testParseMimeBody_checkSplitParams() async throws {
         let parser = DefaultSmtpParser()
         let header = [
-            "CONTENT-TYPE": [#"    application  / json; ;  charset = "utf-8";  name =  " test; =test " "#],
+            "CONTENT-TYPE": [#"    application((comment\) "test"())  / json; ;  charset = "utf-8";  name =  " test; =(\"test\") " "#],
             "CONTENT-TRANSFER-ENCODING": ["BASE64"]
         ]
         let body = "eyJrZXkxIjoidmFsdWUiLCJrZXkyIjoxMTF9"
@@ -659,9 +796,22 @@ struct SmtpParserTests {
         #expect(result.type == .data)
         #expect(result.contentType == "application/json")
         #expect(result.charset == "utf-8")
-        #expect(result.filename == " test; =test ")
+        #expect(result.filename == #" test; =("test") "#)
         
         let json = String(data: result.data ?? Data(), encoding: .utf8)
         #expect(json == #"{"key1":"value","key2":111}"#)
+    }
+}
+
+private extension Date {
+    func equals(_ date: Date) -> Bool {
+        abs(self.distance(to: date)) < 1
+    }
+    
+    func equals(_ text: String) -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        guard let date = formatter.date(from: text) else { return false }
+        return self.equals(date)
     }
 }
