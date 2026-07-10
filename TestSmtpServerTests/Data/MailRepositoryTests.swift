@@ -11,6 +11,7 @@ import Testing
 
 @testable import TestSmtpServer
 
+@Suite(.serialized)
 struct MailRepositoryTests {
 
     private let container: ModelContainer
