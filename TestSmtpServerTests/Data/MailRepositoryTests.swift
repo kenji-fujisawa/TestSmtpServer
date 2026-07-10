@@ -14,17 +14,15 @@ import Testing
 struct MailRepositoryTests {
 
     private let container: ModelContainer
-    private let context: ModelContext
     
     init() throws {
         let schema = Schema(LocalMail.self)
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         self.container = try ModelContainer(for: schema, configurations: config)
-        self.context = ModelContext(self.container)
     }
     
     @Test func testGetMailsStream() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let repository = DefaultMailRepository(source)
         
         let mails = [
@@ -112,21 +110,21 @@ struct MailRepositoryTests {
                 received: Date(timeIntervalSinceNow: -20)
             )
         ]
-        try source.insert(mails[0])
+        try await source.insert(mails[0])
         
         var iterator = try repository.getMailsStream().makeAsyncIterator()
         var results = try await iterator.next()
         #expect(results?.count == 1)
         #expect(results?[0] == mails[0])
         
-        try source.insert(mails[1])
+        try await source.insert(mails[1])
         
         results = try await iterator.next()
         #expect(results?.count == 2)
         #expect(results?[0] == mails[0])
         #expect(results?[1] == mails[1])
         
-        try source.insert(mails[2])
+        try await source.insert(mails[2])
         
         results = try await iterator.next()
         #expect(results?.count == 3)
@@ -136,7 +134,7 @@ struct MailRepositoryTests {
     }
     
     @Test func testGetMails() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let repository = DefaultMailRepository(source)
         
         let mails = [
@@ -224,9 +222,11 @@ struct MailRepositoryTests {
                 received: Date(timeIntervalSinceNow: -20)
             )
         ]
-        try mails.forEach { try source.insert($0) }
+        for mail in mails {
+            try await source.insert(mail)
+        }
         
-        let results = try repository.getMails()
+        let results = try await repository.getMails()
         #expect(results.count == mails.count)
         #expect(results[0] == mails[0])
         #expect(results[1] == mails[1])
@@ -234,7 +234,7 @@ struct MailRepositoryTests {
     }
     
     @Test func testAdd() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let repository = DefaultMailRepository(source)
         
         let mail = Mail(
@@ -267,9 +267,9 @@ struct MailRepositoryTests {
             sent: .now,
             received: .now
         )
-        try repository.add(mail)
+        try await repository.add(mail)
         
-        let results = try source.getMails()
+        let results = try await source.getMails()
         #expect(results.count == 1)
         #expect(results[0] == mail)
     }

@@ -119,9 +119,10 @@ struct LocalDataSourceTests {
     
     @Test func testGetUsers() async throws {
         users.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
-        let results = try source.getUsers()
+        let source = DefaultLocalDataSource(modelContainer: container)
+        let results = try await source.getUsers()
         #expect(results.count == 3)
         #expect(results[0] == users[0])
         #expect(results[1] == users[1])
@@ -130,24 +131,27 @@ struct LocalDataSourceTests {
     
     @Test func testGetUser() async throws {
         users.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
-        var result = try source.getUser(name: users[0].name)
+        let source = DefaultLocalDataSource(modelContainer: container)
+        var result = try await source.getUser(name: users[0].name)
         #expect(result == users[0])
         
-        result = try source.getUser(name: users[1].name)
+        result = try await source.getUser(name: users[1].name)
         #expect(result == users[1])
         
-        result = try source.getUser(name: users[2].name)
+        result = try await source.getUser(name: users[2].name)
         #expect(result == users[2])
         
-        result = try source.getUser(name: "")
+        result = try await source.getUser(name: "")
         #expect(result == nil)
     }
     
     @Test func testInsertUser() async throws {
-        let source = DefaultLocalDataSource(context)
-        try users.forEach { try source.insert($0) }
+        let source = DefaultLocalDataSource(modelContainer: container)
+        for user in users {
+            try await source.insert(user)
+        }
         
         let descriptor = FetchDescriptor<LocalUser>(
             sortBy: [.init(\.name)]
@@ -161,16 +165,17 @@ struct LocalDataSourceTests {
     
     @Test func testUpdateUser() async throws {
         users.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         
-        guard var user1 = try source.getUser(name: users[0].name) else {
+        guard var user1 = try await source.getUser(name: users[0].name) else {
             Issue.record()
             return
         }
         user1.password = "aaa"
         
-        guard var user2 = try source.getUser(name: users[2].name) else {
+        guard var user2 = try await source.getUser(name: users[2].name) else {
             Issue.record()
             return
         }
@@ -185,8 +190,8 @@ struct LocalDataSourceTests {
         #expect(results[1] == users[1])
         #expect(results[2] == users[2])
         
-        try source.update(user1)
-        try source.update(user2)
+        try await source.update(user1)
+        try await source.update(user2)
         
         results = try context.fetch(descriptor).map { $0.asUser() }
         #expect(results.count == 3)
@@ -202,14 +207,15 @@ struct LocalDataSourceTests {
     
     @Test func testDeleteUser() async throws {
         users.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         
-        guard let user = try source.getUser(name: users[1].name) else {
+        guard let user = try await source.getUser(name: users[1].name) else {
             Issue.record()
             return
         }
-        try source.delete(user)
+        try await source.delete(user)
         
         let descriptor = FetchDescriptor<LocalUser>(
             sortBy: [.init(\.name)]
@@ -222,9 +228,10 @@ struct LocalDataSourceTests {
     
     @Test func testGetMails() async throws {
         mails.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
-        let results = try source.getMails()
+        let source = DefaultLocalDataSource(modelContainer: container)
+        let results = try await source.getMails()
         #expect(results.count == 3)
         #expect(results[0] == mails[0])
         #expect(results[1] == mails[1])
@@ -232,8 +239,10 @@ struct LocalDataSourceTests {
     }
     
     @Test func testInsertMail() async throws {
-        let source = DefaultLocalDataSource(context)
-        try mails.forEach { try source.insert($0) }
+        let source = DefaultLocalDataSource(modelContainer: container)
+        for mail in mails {
+            try await source.insert(mail)
+        }
         
         let descriptor = FetchDescriptor<LocalMail>(
             sortBy: [.init(\.received)]
@@ -247,10 +256,11 @@ struct LocalDataSourceTests {
     
     @Test func testUpdateMail() async throws {
         mails.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         
-        let mails = try source.getMails()
+        let mails = try await source.getMails()
         
         var mail1 = mails[0]
         mail1.to = [
@@ -281,8 +291,8 @@ struct LocalDataSourceTests {
         #expect(results[1] == mails[1])
         #expect(results[2] == mails[0])
         
-        try source.update(mail1)
-        try source.update(mail2)
+        try await source.update(mail1)
+        try await source.update(mail2)
         
         results = try context.fetch(descriptor).map { $0.asMail() }
         #expect(results.count == 3)
@@ -318,11 +328,12 @@ struct LocalDataSourceTests {
     
     @Test func testDeleteMail() async throws {
         mails.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         
-        let mails = try source.getMails()
-        try source.delete(mails[1])
+        let mails = try await source.getMails()
+        try await source.delete(mails[1])
         
         let descriptor = FetchDescriptor<LocalMail>(
             sortBy: [.init(\.received)]

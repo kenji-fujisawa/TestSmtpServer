@@ -8,7 +8,7 @@
 import Foundation
 import SwiftData
 
-protocol LocalDataSource {
+protocol LocalDataSource: Actor {
     func getUsers() throws -> [User]
     func getUser(name: String) throws -> User?
     func insert(_ user: User) throws
@@ -21,18 +21,13 @@ protocol LocalDataSource {
     func delete(_ mail: Mail) throws
 }
 
-class DefaultLocalDataSource: LocalDataSource {
-    private let context: ModelContext
-    
-    init(_ context: ModelContext) {
-        self.context = context
-    }
-    
+@ModelActor
+actor DefaultLocalDataSource: LocalDataSource {
     func getUsers() throws -> [User] {
         let descriptor = FetchDescriptor<LocalUser>(
             sortBy: [.init(\.name)]
         )
-        return try context.fetch(descriptor).map { $0.asUser() }
+        return try modelContext.fetch(descriptor).map { $0.asUser() }
     }
     
     func getUser(name: String) throws -> User? {
@@ -43,25 +38,25 @@ class DefaultLocalDataSource: LocalDataSource {
         let descriptor = FetchDescriptor<LocalUser>(
             predicate: #Predicate { $0.name == name }
         )
-        return try context.fetch(descriptor).first
+        return try modelContext.fetch(descriptor).first
     }
     
     func insert(_ user: User) throws {
-        context.insert(user.asLocal())
-        try context.save()
+        modelContext.insert(user.asLocal())
+        try modelContext.save()
     }
     
     func update(_ user: User) throws {
         if let local = try getLocalUser(name: user.name) {
             local.password = user.password
-            try context.save()
+            try modelContext.save()
         }
     }
     
     func delete(_ user: User) throws {
         if let local = try getLocalUser(name: user.name) {
-            context.delete(local)
-            try context.save()
+            modelContext.delete(local)
+            try modelContext.save()
         }
     }
     
@@ -69,19 +64,19 @@ class DefaultLocalDataSource: LocalDataSource {
         let descriptor = FetchDescriptor<LocalMail>(
             sortBy: [.init(\.received, order: .reverse)]
         )
-        return try context.fetch(descriptor).map { $0.asMail() }
+        return try modelContext.fetch(descriptor).map { $0.asMail() }
     }
     
     private func getLocalMail(id: UUID) throws -> LocalMail? {
         let descriptor = FetchDescriptor<LocalMail>(
             predicate: #Predicate { $0.id == id }
         )
-        return try context.fetch(descriptor).first
+        return try modelContext.fetch(descriptor).first
     }
     
     func insert(_ mail: Mail) throws {
-        context.insert(mail.asLocal())
-        try context.save()
+        modelContext.insert(mail.asLocal())
+        try modelContext.save()
     }
     
     func update(_ mail: Mail) throws {
@@ -97,14 +92,14 @@ class DefaultLocalDataSource: LocalDataSource {
             local.attachments = mail.attachments.map { $0.asLocal() }
             local.sent = mail.sent
             local.received = mail.received
-            try context.save()
+            try modelContext.save()
         }
     }
     
     func delete(_ mail: Mail) throws {
         if let local = try getLocalMail(id: mail.id) {
-            context.delete(local)
-            try context.save()
+            modelContext.delete(local)
+            try modelContext.save()
         }
     }
 }

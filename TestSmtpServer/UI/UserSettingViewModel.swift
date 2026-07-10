@@ -22,8 +22,10 @@ class UserSettingViewModel {
     }
     
     private func updateUsers() {
-        if let users = try? userRepository.getUsers() {
-            self.users = users.map { $0.name }
+        Task { @MainActor in
+            if let users = try? await userRepository.getUsers() {
+                self.users = users.map { $0.name }
+            }
         }
     }
     
@@ -53,16 +55,23 @@ class UserSettingViewModel {
     }
     
     func deleteUser(name: String) {
+        guard processing == false else { return }
+        
         addError = nil
         deleteError = nil
         
-        do {
-            try userRepository.unregister(name: name)
-            updateUsers()
-        } catch DefaultUserRepository.UnregisterError.notFound {
-            deleteError = "ユーザが存在しません"
-        } catch {
-            deleteError = error.localizedDescription
+        processing = true
+        Task { @MainActor in
+            defer { processing = false }
+            
+            do {
+                try await userRepository.unregister(name: name)
+                updateUsers()
+            } catch DefaultUserRepository.UnregisterError.notFound {
+                deleteError = "ユーザが存在しません"
+            } catch {
+                deleteError = error.localizedDescription
+            }
         }
     }
 }

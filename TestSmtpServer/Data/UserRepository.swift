@@ -8,9 +8,9 @@
 import Foundation
 
 protocol UserRepository {
-    func getUsers() throws -> [User]
+    func getUsers() async throws -> [User]
     func register(name: String, password: String) async throws
-    func unregister(name: String) throws
+    func unregister(name: String) async throws
     func authenticate(name: String, password: String) async throws -> Bool
 }
 
@@ -33,12 +33,12 @@ class DefaultUserRepository: UserRepository {
         self.passwordHasher = passwordHasher
     }
     
-    func getUsers() throws -> [User] {
-        try source.getUsers()
+    func getUsers() async throws -> [User] {
+        try await source.getUsers()
     }
     
     func register(name: String, password: String) async throws {
-        guard try source.getUser(name: name) == nil else { throw RegisterError.duplicateUser }
+        guard try await source.getUser(name: name) == nil else { throw RegisterError.duplicateUser }
         guard name.allSatisfy({ $0.isWhitespace }) == false else { throw RegisterError.invalidName }
         guard !password.isEmpty else { throw RegisterError.invalidPassword }
         
@@ -46,17 +46,17 @@ class DefaultUserRepository: UserRepository {
             name: name,
             password: try await passwordHasher.hash(password)
         )
-        try source.insert(user)
+        try await source.insert(user)
     }
     
-    func unregister(name: String) throws {
-        guard let user = try source.getUser(name: name) else { throw UnregisterError.notFound }
+    func unregister(name: String) async throws {
+        guard let user = try await source.getUser(name: name) else { throw UnregisterError.notFound }
         
-        try source.delete(user)
+        try await source.delete(user)
     }
     
     func authenticate(name: String, password: String) async throws -> Bool {
-        guard let user = try source.getUser(name: name) else { return false }
+        guard let user = try await source.getUser(name: name) else { return false }
         
         return try await passwordHasher.verify(password: password, hash: user.password)
     }

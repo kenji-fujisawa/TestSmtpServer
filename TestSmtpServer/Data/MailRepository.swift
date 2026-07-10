@@ -10,8 +10,8 @@ import SwiftData
 
 protocol MailRepository {
     func getMailsStream() throws -> AsyncThrowingStream<[Mail], any Error>
-    func getMails() throws -> [Mail]
-    func add(_ mail: Mail) throws
+    func getMails() async throws -> [Mail]
+    func add(_ mail: Mail) async throws
 }
 
 class DefaultMailRepository: MailRepository {
@@ -23,19 +23,19 @@ class DefaultMailRepository: MailRepository {
     
     func getMailsStream() throws -> AsyncThrowingStream<[Mail], any Error> {
         AsyncThrowingStream { continuation in
-            do {
-                let mails = try source.getMails()
-                continuation.yield(mails)
-            } catch {
-                continuation.finish(throwing: error)
-                return
-            }
-            
             let task = Task {
+                do {
+                    let mails = try await source.getMails()
+                    continuation.yield(mails)
+                } catch {
+                    continuation.finish(throwing: error)
+                    return
+                }
+                
                 let notifications = NotificationCenter.default.notifications(named: ModelContext.didSave)
                 for await _ in notifications {
                     do {
-                        let mails = try source.getMails()
+                        let mails = try await source.getMails()
                         continuation.yield(mails)
                     } catch {
                         continuation.finish(throwing: error)
@@ -50,11 +50,11 @@ class DefaultMailRepository: MailRepository {
         }
     }
     
-    func getMails() throws -> [Mail] {
-        try source.getMails()
+    func getMails() async throws -> [Mail] {
+        try await source.getMails()
     }
     
-    func add(_ mail: Mail) throws {
-        try source.insert(mail)
+    func add(_ mail: Mail) async throws {
+        try await source.insert(mail)
     }
 }

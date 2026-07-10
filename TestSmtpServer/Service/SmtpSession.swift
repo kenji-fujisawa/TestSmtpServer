@@ -400,7 +400,7 @@ class SmtpSession: Session {
                     sent: content.date,
                     received: .now
                 )
-                try mailRepository.add(mail)
+                try await mailRepository.add(mail)
             } catch {
                 await Logger.shared.log(error)
                 response.code = 451

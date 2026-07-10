@@ -23,7 +23,7 @@ struct UserRepositoryTests {
     }
     
     @Test func testGetUsers() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
@@ -33,8 +33,9 @@ struct UserRepositoryTests {
             User(name: "user3", password: "pass3")
         ]
         users.forEach { context.insert($0.asLocal()) }
+        try context.save()
         
-        let results = try repository.getUsers()
+        let results = try await repository.getUsers()
         #expect(results.count == 3)
         #expect(results[0] == users[0])
         #expect(results[1] == users[1])
@@ -42,7 +43,7 @@ struct UserRepositoryTests {
     }
     
     @Test func testRegister() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
@@ -50,21 +51,21 @@ struct UserRepositoryTests {
         let pass = "pass"
         try await repository.register(name: name, password: pass)
         
-        let user = try source.getUser(name: name)
+        let user = try await source.getUser(name: name)
         #expect(user != nil)
         #expect(user?.name == name)
         #expect(user?.password == pass)
     }
     
     @Test func testRegister_duplicate() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
         let name = "user"
         let pass = "pass"
         let user = User(name: name, password: pass)
-        try source.insert(user)
+        try await source.insert(user)
         
         await #expect(throws: DefaultUserRepository.RegisterError.duplicateUser) {
             try await repository.register(name: name, password: pass)
@@ -72,7 +73,7 @@ struct UserRepositoryTests {
     }
     
     @Test func testRegister_invalidName() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
@@ -88,7 +89,7 @@ struct UserRepositoryTests {
     }
     
     @Test func testRegister_invalidPassword() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
@@ -101,29 +102,31 @@ struct UserRepositoryTests {
     }
     
     @Test func testUnregister() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
         let name = "name"
         context.insert(LocalUser(name: name, password: ""))
+        try context.save()
         
-        try repository.unregister(name: name)
+        try await repository.unregister(name: name)
         
         let results = try context.fetch(FetchDescriptor<LocalUser>())
         #expect(results.count == 0)
     }
     
     @Test func testUnregister_notfound() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
         let name = "name"
         context.insert(LocalUser(name: name, password: ""))
+        try context.save()
         
-        #expect(throws: DefaultUserRepository.UnregisterError.notFound) {
-            try repository.unregister(name: "bbb")
+        await #expect(throws: DefaultUserRepository.UnregisterError.notFound) {
+            try await repository.unregister(name: "bbb")
         }
         
         let results = try context.fetch(FetchDescriptor<LocalUser>())
@@ -131,27 +134,27 @@ struct UserRepositoryTests {
     }
     
     @Test func testAuthenticate() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
         let name = "user"
         let pass = "pass"
         let user = User(name: name, password: pass)
-        try source.insert(user)
+        try await source.insert(user)
         
         #expect(try await repository.authenticate(name: name, password: pass) == true)
     }
     
     @Test func testAuthenticate_fail() async throws {
-        let source = DefaultLocalDataSource(context)
+        let source = DefaultLocalDataSource(modelContainer: container)
         let hasher = FakePasswordHasher()
         let repository = DefaultUserRepository(source, hasher)
         
         let name = "user"
         let pass = "pass"
         let user = User(name: name, password: pass)
-        try source.insert(user)
+        try await source.insert(user)
         
         #expect(try await repository.authenticate(name: name, password: "aaa") == false)
     }

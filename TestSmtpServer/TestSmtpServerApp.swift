@@ -35,7 +35,7 @@ struct TestSmtpServerApp: App {
             fatalError(error.localizedDescription)
         }
         
-        let localSource = DefaultLocalDataSource(container.mainContext)
+        let localSource = DefaultLocalDataSource(modelContainer: container)
         mailRepository = DefaultMailRepository(localSource)
         
         let bookmarkSource = UserDefaultsBookmarkDataSource()
@@ -135,7 +135,7 @@ struct UITestApp: App {
             
             let bookmarkSource = FakeBookmarkDataSource()
             let secureSource = FakeSecureDataSource()
-            let localSource = DefaultLocalDataSource(container.mainContext)
+            let localSource = DefaultLocalDataSource(modelContainer: container)
             let hasher = Argon2PasswordHasher()
             let mailRepository = DefaultMailRepository(localSource)
             let certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
@@ -184,10 +184,12 @@ struct UITestApp: App {
             if CommandLine.arguments.contains("MailView") {
                 MailView(viewModel: MailViewModel(mailRepository))
                 Button("add") {
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "yyyy-MM-dd HH:mm"
-                    let mail = Mail(subject: "subject", body: ["body"], received: .now)
-                    try? mailRepository.add(mail)
+                    Task {
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+                        let mail = Mail(subject: "subject", body: ["body"], received: .now)
+                        try? await mailRepository.add(mail)
+                    }
                 }
             } else if CommandLine.arguments.contains("CertificateSettingView") {
                 CertificateSettingView(viewModel: CertificateSettingViewModel(certificateRepository), isUiTesting: true)
