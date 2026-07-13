@@ -1,0 +1,75 @@
+//
+//  LocalMail.swift
+//  TestSmtpServer
+//
+//  Created by uhimania on 2026/06/22.
+//
+
+import Foundation
+import SwiftData
+
+extension TestSmtpServerSchema_v1 {
+    @Model
+    class Mail_v1 {
+        @Model
+        class Address_v1 {
+            var name: String
+            var address: String
+            var from: Mail_v1?
+            var to: Mail_v1?
+            var cc: Mail_v1?
+            
+            init(name: String = "", address: String = "") {
+                self.name = name
+                self.address = address
+            }
+        }
+        
+        @Model
+        class Attachment_v1 {
+            var filename: String
+            @Attribute(.externalStorage) var data: Data
+            var parent: Mail_v1?
+            
+            init(filename: String = "", data: Data = Data()) {
+                self.filename = filename
+                self.data = data
+            }
+        }
+        
+        typealias Address = Address_v1
+        typealias Attachment = Attachment_v1
+        
+        #Index<Mail_v1>([\.id], [\.received])
+        
+        var id: UUID
+        var mail: String
+        var rcpt: [String]
+        var data: String
+        @Relationship(deleteRule: .cascade, inverse: \Address_v1.from) var from: Address_v1?
+        @Relationship(deleteRule: .cascade, inverse: \Address_v1.to) var to: [Address_v1]
+        @Relationship(deleteRule: .cascade, inverse: \Address_v1.cc) var cc: [Address_v1]
+        var subject: String
+        var body: [String]
+        @Relationship(deleteRule: .cascade, inverse: \Attachment_v1.parent) var attachments: [Attachment_v1]
+        var sent: Date?
+        var received: Date?
+        
+        init(id: UUID = UUID(), mail: String = "", rcpt: [String] = [], data: String = "", from: Address_v1? = nil, to: [Address_v1] = [], cc: [Address_v1] = [], subject: String = "", body: [String] = [], attachments: [Attachment_v1] = [], sent: Date? = nil, received: Date? = nil) {
+            self.id = id
+            self.mail = mail
+            self.rcpt = rcpt
+            self.data = data
+            self.from = from
+            self.to = to
+            self.cc = cc
+            self.subject = subject
+            self.body = body
+            self.attachments = attachments
+            self.sent = sent
+            self.received = received
+        }
+    }
+}
+
+typealias LocalMail = TestSmtpServerSchema_v1.Mail_v1
