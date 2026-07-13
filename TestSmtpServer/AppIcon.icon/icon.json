@@ -4,6 +4,7 @@
     {
       "layers" : [
         {
+          "glass" : false,
           "image-name" : "Icon-512@2x.png",
           "name" : "Icon-512@2x"
         }
