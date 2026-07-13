@@ -62,6 +62,9 @@ struct TestSmtpServerApp: App {
                 .environment(\.certificateRepository, certificateRepository)
                 .environment(\.userRepository, userRepository)
                 .environment(\.logRepository, logRepository)
+                .onDisappear() {
+                    NSApplication.shared.terminate(nil)
+                }
         }
     }
 }
