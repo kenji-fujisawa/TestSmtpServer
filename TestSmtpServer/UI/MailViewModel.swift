@@ -37,4 +37,14 @@ class MailViewModel {
     deinit {
         task?.cancel()
     }
+    
+    func remove(_ mail: Mail) {
+        Task {
+            do {
+                try await mailRepository.remove(mail)
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
 }

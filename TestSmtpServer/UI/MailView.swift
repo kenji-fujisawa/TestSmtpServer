@@ -12,6 +12,7 @@ struct MailView: View {
     let viewModel: MailViewModel
     @State private var selected: UUID? = nil
     @State private var rawData: Bool = false
+    @State private var removeSelected: Bool = false
     
     var body: some View {
         GeometryReader { proxy in
@@ -26,6 +27,9 @@ struct MailView: View {
                     }
                 }
                 .frame(minWidth: minLeftWidth, idealWidth: leftWidth)
+                .onChange(of: selected) { _, _ in
+                    removeSelected = false
+                }
                 
                 VStack {
                     Group {
@@ -68,6 +72,27 @@ struct MailView: View {
                             Text("RawData")
                         }
                         .toggleStyle(.button)
+                    }
+                    ToolbarItem {
+                        if removeSelected {
+                            Button {
+                                if let mail = viewModel.mails.first(where: { $0.id == selected }) {
+                                    viewModel.remove(mail)
+                                    selected = nil
+                                }
+                                removeSelected = false
+                            } label: {
+                                Text("削除する")
+                            }
+                            .foregroundStyle(.red)
+                        } else {
+                            Button {
+                                removeSelected = true
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .disabled(selected == nil)
+                        }
                     }
                 }
             }
@@ -330,4 +355,5 @@ private class FakeMailRepository: MailRepository {
     
     func getMails() throws -> [Mail] { [] }
     func add(_ mail: Mail) throws {}
+    func remove(_ mail: Mail) async throws {}
 }

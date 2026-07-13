@@ -104,6 +104,7 @@ private class FakeMailRepository: MailRepository {
     func getMailsStream() throws -> AsyncThrowingStream<[Mail], any Error> { AsyncThrowingStream { _ in } }
     func getMails() throws -> [Mail] { [] }
     func add(_ mail: Mail) throws {}
+    func remove(_ mail: Mail) async throws {}
 }
 
 private class FakeUserRepository: UserRepository {

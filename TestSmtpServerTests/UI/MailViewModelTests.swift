@@ -119,6 +119,30 @@ struct MailViewModelTests {
         #expect(viewModel.mails[2] == mails[2])
     }
     
+    @Test func testRemove() async throws {
+        let repository = FakeMailRepository()
+        let viewModel = MailViewModel(repository)
+        
+        let mails = [
+            Mail(received: Date(timeIntervalSinceNow: 0)),
+            Mail(received: Date(timeIntervalSinceNow: -10)),
+            Mail(received: Date(timeIntervalSinceNow: -20))
+        ]
+        try mails.forEach { try repository.add($0) }
+        try await Task.sleep(for: .milliseconds(10))
+        
+        #expect(viewModel.mails.count == 3)
+        #expect(viewModel.mails[0] == mails[0])
+        #expect(viewModel.mails[1] == mails[1])
+        #expect(viewModel.mails[2] == mails[2])
+        
+        viewModel.remove(mails[1])
+        try await Task.sleep(for: .milliseconds(10))
+        #expect(viewModel.mails.count == 2)
+        #expect(viewModel.mails[0] == mails[0])
+        #expect(viewModel.mails[1] == mails[2])
+    }
+    
     class FakeMailRepository: MailRepository {
         private var mails: [Mail] = []
         private var continuation: AsyncThrowingStream<[Mail], any Error>.Continuation? = nil
@@ -133,6 +157,11 @@ struct MailViewModelTests {
         
         func add(_ mail: Mail) throws {
             mails.append(mail)
+            continuation?.yield(mails)
+        }
+        
+        func remove(_ mail: Mail) async throws {
+            mails.removeAll { $0.id == mail.id }
             continuation?.yield(mails)
         }
     }

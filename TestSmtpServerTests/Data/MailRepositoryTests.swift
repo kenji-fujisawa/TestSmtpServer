@@ -238,6 +238,10 @@ struct MailRepositoryTests {
         let source = DefaultLocalDataSource(modelContainer: container)
         let repository = DefaultMailRepository(source)
         
+        var iterator = try repository.getMailsStream().makeAsyncIterator()
+        var results = try await iterator.next() ?? []
+        #expect(results.count == 0)
+        
         let mail = Mail(
             id: UUID(),
             mail: "mail",
@@ -270,8 +274,45 @@ struct MailRepositoryTests {
         )
         try await repository.add(mail)
         
-        let results = try await source.getMails()
+        results = try await source.getMails()
         #expect(results.count == 1)
         #expect(results[0] == mail)
+        
+        results = try await iterator.next() ?? []
+        #expect(results.count == 1)
+        #expect(results[0] == mail)
+    }
+    
+    @Test func testRemove() async throws {
+        let source = DefaultLocalDataSource(modelContainer: container)
+        let repository = DefaultMailRepository(source)
+        
+        let mails = [
+            Mail(received: Date(timeIntervalSinceNow: 0)),
+            Mail(received: Date(timeIntervalSinceNow: -10)),
+            Mail(received: Date(timeIntervalSinceNow: -20))
+        ]
+        for mail in mails {
+            try await source.insert(mail)
+        }
+        
+        var iterator = try repository.getMailsStream().makeAsyncIterator()
+        var results = try await iterator.next() ?? []
+        #expect(results.count == 3)
+        #expect(results[0] == mails[0])
+        #expect(results[1] == mails[1])
+        #expect(results[2] == mails[2])
+        
+        try await repository.remove(mails[1])
+        
+        results = try await source.getMails()
+        #expect(results.count == 2)
+        #expect(results[0] == mails[0])
+        #expect(results[1] == mails[2])
+        
+        results = try await iterator.next() ?? []
+        #expect(results.count == 2)
+        #expect(results[0] == mails[0])
+        #expect(results[1] == mails[2])
     }
 }

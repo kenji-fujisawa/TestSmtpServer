@@ -12,6 +12,7 @@ protocol MailRepository {
     func getMailsStream() throws -> AsyncThrowingStream<[Mail], any Error>
     func getMails() async throws -> [Mail]
     func add(_ mail: Mail) async throws
+    func remove(_ mail: Mail) async throws
 }
 
 class DefaultMailRepository: MailRepository {
@@ -56,5 +57,9 @@ class DefaultMailRepository: MailRepository {
     
     func add(_ mail: Mail) async throws {
         try await source.insert(mail)
+    }
+    
+    func remove(_ mail: Mail) async throws {
+        try await source.delete(mail)
     }
 }

@@ -656,6 +656,8 @@ struct SmtpSessionTests {
         func add(_ mail: Mail) throws {
             mails.append(mail)
         }
+        
+        func remove(_ mail: Mail) async throws {}
     }
     
     class FakeUserRepository: UserRepository {
