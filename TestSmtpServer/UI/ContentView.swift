@@ -12,6 +12,7 @@ struct ContentView: View {
         case mailbox
         case certificate
         case user
+        case network
         case log
     }
     
@@ -19,6 +20,7 @@ struct ContentView: View {
     @Environment(\.mailRepository) private var mailRepository
     @Environment(\.certificateRepository) private var certificateRepository
     @Environment(\.userRepository) private var userRepository
+    @Environment(\.networkSettingRepository) private var networkSettingRepository
     @Environment(\.logRepository) private var logRepository
     @State private var selected: SelectedView = .mailbox
     @State private var serverRunning: Bool = false
@@ -32,6 +34,8 @@ struct ContentView: View {
                     .tag(SelectedView.certificate)
                 Label("ユーザ", systemImage: "person.and.person")
                     .tag(SelectedView.user)
+                Label("ネットワーク", systemImage: "network")
+                    .tag(SelectedView.network)
                 Label("ログ", systemImage: "rectangle.and.pencil.and.ellipsis")
                     .tag(SelectedView.log)
             }
@@ -72,6 +76,9 @@ struct ContentView: View {
             case .user:
                 UserSettingView(viewModel: UserSettingViewModel(userRepository))
                     .navigationTitle("ユーザ設定")
+            case .network:
+                NetworkSettingView(viewModel: NetworkSettingViewModel(networkSettingRepository))
+                    .navigationTitle("ネットワーク設定")
             case .log:
                 LogView(viewModel: LogViewModel(logRepository))
                     .navigationTitle("ログ")
@@ -87,8 +94,9 @@ struct ContentView: View {
     let cert = FakeCertificateRepository()
     let mail = FakeMailRepository()
     let user = FakeUserRepository()
-    let deps = SmtpDependencies(mail, user)
-    let server = SessionServer<SmtpSession>(port: 0, cert, deps)
+    let net = FakeNetworkSettingRepository()
+    let deps = SmtpDependencies(mail, user, net)
+    let server = SessionServer<SmtpSession>(cert, net, deps)
     ContentView(server: server)
 }
 
@@ -112,4 +120,9 @@ private class FakeUserRepository: UserRepository {
     func register(name: String, password: String) async throws {}
     func unregister(name: String) throws {}
     func authenticate(name: String, password: String) async throws -> Bool { false }
+}
+
+private class FakeNetworkSettingRepository: NetworkSettingRepository {
+    var port: Int { get { 0 } set {} }
+    var bufferSize: Int { get { 0 } set {} }
 }

@@ -10,11 +10,13 @@ import Foundation
 struct SmtpDependencies {
     let mailRepository: MailRepository
     let userRepository: UserRepository
+    let networkSettingRepository: NetworkSettingRepository
     let parser: SmtpParser
     
-    init(_ mailRepository: MailRepository, _ userRepository: UserRepository, _ parser: SmtpParser = DefaultSmtpParser()) {
+    init(_ mailRepository: MailRepository, _ userRepository: UserRepository, _ networkSettingRepository: NetworkSettingRepository, _ parser: SmtpParser = DefaultSmtpParser()) {
         self.mailRepository = mailRepository
         self.userRepository = userRepository
+        self.networkSettingRepository = networkSettingRepository
         self.parser = parser
     }
 }
@@ -65,10 +67,9 @@ class SmtpSession: Session {
         }
     }
     
-    private static let bufferLimit = 4096 * 1000
-    
     private let mailRepository: MailRepository
     private let userRepository: UserRepository
+    private let networkSettingRepository: NetworkSettingRepository
     private let parser: SmtpParser
     private var state: State = .initial
     private var response = Response()
@@ -80,6 +81,7 @@ class SmtpSession: Session {
     required init(_ dependency: SmtpDependencies) {
         self.mailRepository = dependency.mailRepository
         self.userRepository = dependency.userRepository
+        self.networkSettingRepository = dependency.networkSettingRepository
         self.parser = dependency.parser
     }
     
@@ -123,7 +125,7 @@ class SmtpSession: Session {
             }
         }
         
-        guard buffer.count <= SmtpSession.bufferLimit else {
+        guard buffer.count <= networkSettingRepository.bufferSize else {
             return [.close]
         }
         
