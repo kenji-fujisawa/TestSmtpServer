@@ -11,7 +11,7 @@ protocol CertificateRepository {
     func save(certificate: URL, password: String, forKey key: String) throws
     func save(certificate: URL, forKey key: String) throws
     func save(password: String, forKey key: String) throws
-    func load(forKey key: String, callback: (URL, String) -> Void) throws
+    func load(forKey key: String, callback: (URL, String) throws -> Void) throws
     func remove(forKey key: String) throws
 }
 
@@ -37,10 +37,10 @@ class DefaultCertificateRepository: CertificateRepository {
         try secureSource.save(password, forKey: key)
     }
     
-    func load(forKey key: String, callback: (URL, String) -> Void) throws {
+    func load(forKey key: String, callback: (URL, String) throws -> Void) throws {
         let password = try secureSource.load(forKey: key)
         try bookmarkSource.load(forKey: key) { url in
-            callback(url, password)
+            try callback(url, password)
         }
     }
     

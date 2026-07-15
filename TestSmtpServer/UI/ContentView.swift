@@ -104,7 +104,7 @@ private class FakeCertificateRepository: CertificateRepository {
     func save(certificate: URL, password: String, forKey key: String) throws {}
     func save(certificate: URL, forKey key: String) throws {}
     func save(password: String, forKey key: String) throws {}
-    func load(forKey key: String, callback: (URL, String) -> Void) throws {}
+    func load(forKey key: String, callback: (URL, String) throws -> Void) throws {}
     func remove(forKey key: String) throws {}
 }
 

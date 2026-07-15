@@ -9,7 +9,7 @@ import Foundation
 
 protocol FileBookmarkDataSource {
     func save(url: URL, forKey key: String) throws
-    func load(forKey key: String, callback: (URL) -> Void) throws
+    func load(forKey key: String, callback: (URL) throws -> Void) throws
     func remove(forKey key: String)
 }
 
@@ -33,7 +33,7 @@ class UserDefaultsBookmarkDataSource: FileBookmarkDataSource {
         userDefaults.set(bookmark, forKey: key)
     }
     
-    func load(forKey key: String, callback: (URL) -> Void) throws {
+    func load(forKey key: String, callback: (URL) throws -> Void) throws {
         guard let bookmark = userDefaults.data(forKey: key) else { throw BookmarkError.notFound }
         
         var isStale = false
@@ -42,7 +42,7 @@ class UserDefaultsBookmarkDataSource: FileBookmarkDataSource {
         
         guard url.startAccessingSecurityScopedResource() else { throw BookmarkError.accessDenied }
         defer { url.stopAccessingSecurityScopedResource() }
-        callback(url)
+        try callback(url)
     }
     
     func remove(forKey key: String) {

@@ -95,13 +95,7 @@ class SessionServer<T: Session> {
         func switchToSSL(asServer: Bool) async throws {
             guard let repository = certificateRepository else { return }
             try repository.load(forKey: Constants.certificateKey) { url, password in
-                do {
-                    try switchToSSL(asServer: asServer, certificate: url, password: password)
-                } catch {
-                    Task {
-                        await Logger.shared.log(error, socket)
-                    }
-                }
+                try switchToSSL(asServer: asServer, certificate: url, password: password)
             }
         }
         
