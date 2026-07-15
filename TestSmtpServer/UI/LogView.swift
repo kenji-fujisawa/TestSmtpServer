@@ -16,6 +16,16 @@ struct LogView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    viewModel.clear()
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .disabled(viewModel.log.isEmpty)
+            }
+        }
     }
 }
 
@@ -33,4 +43,5 @@ private class FakeLogRepository: LogRepository {
     }
     
     func getLog() -> String { "" }
+    func clear() async {}
 }

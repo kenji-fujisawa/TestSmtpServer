@@ -118,6 +118,7 @@ private class FakeNetworkSettingRepository: NetworkSettingRepository {
 private class FakeLogRepository: LogRepository {
     func getLogStream() -> AsyncStream<String> { AsyncStream { _ in } }
     func getLog() -> String { "" }
+    func clear() async {}
 }
 
 private class FakeSecureDataSource: SecureDataSource {

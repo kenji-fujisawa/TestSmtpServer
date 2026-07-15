@@ -41,6 +41,12 @@ actor Logger {
         continuations.values.forEach { $0.yield(log) }
     }
     
+    func clear() {
+        log = ""
+        
+        continuations.values.forEach { $0.yield(log) }
+    }
+    
     func getLogStream() -> AsyncStream<String> {
         AsyncStream { continuation in
             if !log.isEmpty {

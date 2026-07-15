@@ -29,5 +29,8 @@ final class LogViewTests: XCTestCase {
         
         app.buttons["add"].tap()
         XCTAssertTrue(app.staticTexts["aaa\naaa\n"].waitForExistence(timeout: 3))
+        
+        app.buttons["trash"].tap()
+        XCTAssertFalse(app.staticTexts["aaa\naaa\n"].waitForExistence(timeout: 3))
     }
 }

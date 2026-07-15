@@ -30,4 +30,10 @@ class LogViewModel {
     deinit {
         task?.cancel()
     }
+    
+    func clear() {
+        Task {
+            await logRepository.clear()
+        }
+    }
 }
