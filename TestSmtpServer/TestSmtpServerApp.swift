@@ -9,8 +9,8 @@ import SwiftData
 import SwiftUI
 
 enum Constants {
-    static let port = 1025
-    static let bufferSize = 4096 * 1000
+    static let port = 587
+    static let bufferSize = 65536
     static let certificateKey = Bundle.main.bundleIdentifier ?? "jp.uhimania.TestSmtpServer"
 }
 

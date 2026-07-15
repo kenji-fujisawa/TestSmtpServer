@@ -22,8 +22,8 @@ final class NetworkSettingViewTests: XCTestCase {
         app.launch()
         app.activate()
         
-        XCTAssertTrue(app.textFields["1,025"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.textFields["4,096,000"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["587"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["65,536"].waitForExistence(timeout: 3))
     }
     
     func testPort_enter() throws {
@@ -32,10 +32,10 @@ final class NetworkSettingViewTests: XCTestCase {
         app.launch()
         app.activate()
         
-        XCTAssertTrue(app.textFields["1,025"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["587"].waitForExistence(timeout: 3))
         
-        app.textFields["1,025"].doubleTap()
-        app.textFields["1,025"].typeKey(.delete, modifierFlags: [])
+        app.textFields["587"].doubleTap()
+        app.textFields["587"].typeKey(.delete, modifierFlags: [])
         app.textFields["ポート番号を入力"].typeText("999")
         sleep(1)
         app.textFields["999"].typeKey(.return, modifierFlags: [])
@@ -49,13 +49,13 @@ final class NetworkSettingViewTests: XCTestCase {
         app.launch()
         app.activate()
         
-        XCTAssertTrue(app.textFields["1,025"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["587"].waitForExistence(timeout: 3))
         
-        app.textFields["1,025"].doubleTap()
-        app.textFields["1,025"].typeKey(.delete, modifierFlags: [])
+        app.textFields["587"].doubleTap()
+        app.textFields["587"].typeKey(.delete, modifierFlags: [])
         app.textFields["ポート番号を入力"].typeText("999")
         sleep(1)
-        app.textFields["4,096,000"].tap()
+        app.textFields["65,536"].tap()
         app.buttons["port"].tap()
         XCTAssertEqual(app.staticTexts["check_value"].value as? String, "999")
     }
@@ -66,10 +66,10 @@ final class NetworkSettingViewTests: XCTestCase {
         app.launch()
         app.activate()
         
-        XCTAssertTrue(app.textFields["4,096,000"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["65,536"].waitForExistence(timeout: 3))
         
-        app.textFields["4,096,000"].doubleTap()
-        app.textFields["4,096,000"].typeKey(.delete, modifierFlags: [])
+        app.textFields["65,536"].doubleTap()
+        app.textFields["65,536"].typeKey(.delete, modifierFlags: [])
         app.textFields["バッファサイズを入力"].typeText("999")
         sleep(1)
         app.textFields["999"].typeKey(.return, modifierFlags: [])
@@ -83,13 +83,13 @@ final class NetworkSettingViewTests: XCTestCase {
         app.launch()
         app.activate()
         
-        XCTAssertTrue(app.textFields["4,096,000"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textFields["65,536"].waitForExistence(timeout: 3))
         
-        app.textFields["4,096,000"].doubleTap()
-        app.textFields["4,096,000"].typeKey(.delete, modifierFlags: [])
+        app.textFields["65,536"].doubleTap()
+        app.textFields["65,536"].typeKey(.delete, modifierFlags: [])
         app.textFields["バッファサイズを入力"].typeText("999")
         sleep(1)
-        app.textFields["1,025"].tap()
+        app.textFields["587"].tap()
         app.buttons["buffer"].tap()
         XCTAssertEqual(app.staticTexts["check_value"].value as? String, "999")
     }
