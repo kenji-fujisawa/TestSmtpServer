@@ -25,12 +25,12 @@ final class LogViewTests: XCTestCase {
         XCTAssertTrue(app.buttons["add"].waitForExistence(timeout: 3))
         
         app.buttons["add"].tap()
-        XCTAssertTrue(app.staticTexts["aaa\n"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts.matching(identifier: "aaa").count, 1)
         
         app.buttons["add"].tap()
-        XCTAssertTrue(app.staticTexts["aaa\naaa\n"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts.matching(identifier: "aaa").count, 2)
         
         app.buttons["trash"].tap()
-        XCTAssertFalse(app.staticTexts["aaa\naaa\n"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts.matching(identifier: "aaa").count, 0)
     }
 }

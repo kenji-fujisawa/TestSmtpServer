@@ -12,8 +12,15 @@ struct LogView: View {
     
     var body: some View {
         ScrollView {
-            Text(viewModel.log)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            LazyVStack {
+                let lines = viewModel.log
+                    .replacingOccurrences(of: "\r\n", with: "\n")
+                    .components(separatedBy: "\n")
+                ForEach(lines.enumerated(), id: \.offset) { index, line in
+                    Text(line)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
         .padding()
         .toolbar {
