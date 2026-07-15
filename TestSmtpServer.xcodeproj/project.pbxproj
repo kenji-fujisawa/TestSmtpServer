@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CAF78E042FE2327D00A40628 /* BlueSocketTestCommonLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = CAF78E032FE2327D00A40628 /* BlueSocketTestCommonLibrary */; };
+		CAF78E062FE2327D00A40628 /* Socket in Frameworks */ = {isa = PBXBuildFile; productRef = CAF78E052FE2327D00A40628 /* Socket */; };
+		CAF78E092FE2329B00A40628 /* SSLService in Frameworks */ = {isa = PBXBuildFile; productRef = CAF78E082FE2329B00A40628 /* SSLService */; };
+		CAFD77692FDFC584004256DA /* Argon2Swift in Frameworks */ = {isa = PBXBuildFile; productRef = CAFD77682FDFC584004256DA /* Argon2Swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CA22692E2FDF97D8009FC945 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +59,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CAF78E062FE2327D00A40628 /* Socket in Frameworks */,
+				CAF78E092FE2329B00A40628 /* SSLService in Frameworks */,
+				CAF78E042FE2327D00A40628 /* BlueSocketTestCommonLibrary in Frameworks */,
+				CAFD77692FDFC584004256DA /* Argon2Swift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +123,10 @@
 			);
 			name = TestSmtpServer;
 			packageProductDependencies = (
+				CAFD77682FDFC584004256DA /* Argon2Swift */,
+				CAF78E032FE2327D00A40628 /* BlueSocketTestCommonLibrary */,
+				CAF78E052FE2327D00A40628 /* Socket */,
+				CAF78E082FE2329B00A40628 /* SSLService */,
 			);
 			productName = TestSmtpServer;
 			productReference = CA2269202FDF97D7009FC945 /* TestSmtpServer.app */;
@@ -195,6 +210,11 @@
 			);
 			mainGroup = CA2269172FDF97D7009FC945;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CAFD77672FDFC584004256DA /* XCRemoteSwiftPackageReference "Argon2Swift" */,
+				CAF78E022FE2327D00A40628 /* XCRemoteSwiftPackageReference "BlueSocket" */,
+				CAF78E072FE2329B00A40628 /* XCRemoteSwiftPackageReference "BlueSSLService" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CA2269212FDF97D7009FC945 /* Products */;
 			projectDirPath = "";
@@ -392,11 +412,22 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TestSmtpServer/TestSmtpServer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -410,7 +441,7 @@
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -422,11 +453,22 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TestSmtpServer/TestSmtpServer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -440,7 +482,7 @@
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -563,6 +605,56 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CAF78E022FE2327D00A40628 /* XCRemoteSwiftPackageReference "BlueSocket" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Kitura/BlueSocket";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.4;
+			};
+		};
+		CAF78E072FE2329B00A40628 /* XCRemoteSwiftPackageReference "BlueSSLService" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Kitura/BlueSSLService";
+			requirement = {
+				kind = exactVersion;
+				version = 2.0.2;
+			};
+		};
+		CAFD77672FDFC584004256DA /* XCRemoteSwiftPackageReference "Argon2Swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tmthecoder/Argon2Swift.git";
+			requirement = {
+				kind = revision;
+				revision = 53543623fefe68461b7eeea03d7f96677c2fd76d;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CAF78E032FE2327D00A40628 /* BlueSocketTestCommonLibrary */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAF78E022FE2327D00A40628 /* XCRemoteSwiftPackageReference "BlueSocket" */;
+			productName = BlueSocketTestCommonLibrary;
+		};
+		CAF78E052FE2327D00A40628 /* Socket */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAF78E022FE2327D00A40628 /* XCRemoteSwiftPackageReference "BlueSocket" */;
+			productName = Socket;
+		};
+		CAF78E082FE2329B00A40628 /* SSLService */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAF78E072FE2329B00A40628 /* XCRemoteSwiftPackageReference "BlueSSLService" */;
+			productName = SSLService;
+		};
+		CAFD77682FDFC584004256DA /* Argon2Swift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAFD77672FDFC584004256DA /* XCRemoteSwiftPackageReference "Argon2Swift" */;
+			productName = Argon2Swift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CA2269182FDF97D7009FC945 /* Project object */;
 }
