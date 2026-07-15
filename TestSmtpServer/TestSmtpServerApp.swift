@@ -9,7 +9,8 @@ import SwiftData
 import SwiftUI
 
 enum Constants {
-    static let port = 1025
+    static let port = 587
+    static let bufferSize = 65536
     static let certificateKey = Bundle.main.bundleIdentifier ?? "jp.uhimania.TestSmtpServer"
 }
 
@@ -18,6 +19,7 @@ struct TestSmtpServerApp: App {
     private let mailRepository: MailRepository
     private let certificateRepository: CertificateRepository
     private let userRepository: UserRepository
+    private let networkSettingRepository: NetworkSettingRepository
     private let logRepository: LogRepository
     private let server: SessionServer<SmtpSession>
     
@@ -49,10 +51,13 @@ struct TestSmtpServerApp: App {
         let passwordHasher = Argon2PasswordHasher()
         userRepository = DefaultUserRepository(localSource, passwordHasher)
         
+        let keyValueSource = UserDefaultsDataSource()
+        networkSettingRepository = DefaultNetworkSettingRepository(keyValueSource)
+        
         logRepository = DefaultLogRepository(Logger.shared)
         
-        let dependency = SmtpDependencies(mailRepository, userRepository)
-        server = SessionServer<SmtpSession>(port: Constants.port, certificateRepository, dependency)
+        let dependency = SmtpDependencies(mailRepository, userRepository, networkSettingRepository)
+        server = SessionServer<SmtpSession>(certificateRepository, networkSettingRepository, dependency)
     }
     
     var body: some Scene {
@@ -61,6 +66,7 @@ struct TestSmtpServerApp: App {
                 .environment(\.mailRepository, mailRepository)
                 .environment(\.certificateRepository, certificateRepository)
                 .environment(\.userRepository, userRepository)
+                .environment(\.networkSettingRepository, networkSettingRepository)
                 .environment(\.logRepository, logRepository)
                 .onDisappear() {
                     NSApplication.shared.terminate(nil)
@@ -78,6 +84,7 @@ extension EnvironmentValues {
     @Entry var mailRepository: MailRepository = FakeMailRepository()
     @Entry var certificateRepository: CertificateRepository = FakeCertificateRepository()
     @Entry var userRepository: UserRepository = FakeUserRepository()
+    @Entry var networkSettingRepository: NetworkSettingRepository = FakeNetworkSettingRepository()
     @Entry var logRepository: LogRepository = FakeLogRepository()
 }
 
@@ -101,6 +108,11 @@ private class FakeUserRepository: UserRepository {
     func register(name: String, password: String) async throws {}
     func unregister(name: String) throws {}
     func authenticate(name: String, password: String) async throws -> Bool { false }
+}
+
+private class FakeNetworkSettingRepository: NetworkSettingRepository {
+    var port: Int { get { 0 } set {} }
+    var bufferSize: Int { get { 0 } set {} }
 }
 
 private class FakeLogRepository: LogRepository {
@@ -130,9 +142,11 @@ struct UITestApp: App {
     @State private var bookmarkSource: FileBookmarkDataSource
     @State private var secureSource: SecureDataSource
     @State private var localSource: LocalDataSource
+    @State private var keyValueSource: KeyValueDataSource
     @State private var mailRepository: MailRepository
     @State private var certificateRepository: CertificateRepository
     @State private var userRepository: UserRepository
+    @State private var networkSettingRepository: NetworkSettingRepository
     @State private var logRepository: LogRepository
     @State private var tmpText: String = ""
     
@@ -145,19 +159,23 @@ struct UITestApp: App {
             let bookmarkSource = FakeBookmarkDataSource()
             let secureSource = FakeSecureDataSource()
             let localSource = DefaultLocalDataSource(modelContainer: container)
+            let keyValueSource = FakeKeyValueDataSource()
             let hasher = Argon2PasswordHasher()
             let mailRepository = DefaultMailRepository(localSource)
             let certificateRepository = DefaultCertificateRepository(bookmarkSource, secureSource)
             let userRepository = DefaultUserRepository(localSource, hasher)
+            let networkSettingRepository = DefaultNetworkSettingRepository(keyValueSource)
             let logRepository = DefaultLogRepository(Logger.shared)
             
             self.container = container
             self.bookmarkSource = bookmarkSource
             self.secureSource = secureSource
             self.localSource = localSource
+            self.keyValueSource = keyValueSource
             self.mailRepository = mailRepository
             self.certificateRepository = certificateRepository
             self.userRepository = userRepository
+            self.networkSettingRepository = networkSettingRepository
             self.logRepository = logRepository
         } catch {
             fatalError()
@@ -209,6 +227,18 @@ struct UITestApp: App {
                         tmpText = text
                     }
                 }
+            } else if CommandLine.arguments.contains("UserSettingView") {
+                UserSettingView(viewModel: UserSettingViewModel(userRepository))
+            } else if CommandLine.arguments.contains("NetworkSettingView") {
+                NetworkSettingView(viewModel: NetworkSettingViewModel(networkSettingRepository))
+                Text(tmpText)
+                    .accessibilityIdentifier("check_value")
+                Button("port") {
+                    tmpText = String(networkSettingRepository.port)
+                }
+                Button("buffer") {
+                    tmpText = String(networkSettingRepository.bufferSize)
+                }
             } else if CommandLine.arguments.contains("LogView") {
                 LogView(viewModel: LogViewModel(logRepository))
                 Button("add") {
@@ -216,8 +246,6 @@ struct UITestApp: App {
                         await Logger.shared.log("aaa")
                     }
                 }
-            } else if CommandLine.arguments.contains("UserSettingView") {
-                UserSettingView(viewModel: UserSettingViewModel(userRepository))
             }
         }
     }
@@ -253,6 +281,18 @@ struct UITestApp: App {
         
         func remove(forKey key: String) throws {
             values.removeValue(forKey: key)
+        }
+    }
+    
+    class FakeKeyValueDataSource: KeyValueDataSource {
+        private var values: [String: Int] = [:]
+        
+        func set(_ value: Int, forKey key: String) {
+            values[key] = value
+        }
+        
+        func integer(forKey key: String) -> Int? {
+            values[key]
         }
     }
 }

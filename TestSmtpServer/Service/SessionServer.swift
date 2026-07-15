@@ -265,8 +265,8 @@ class SessionServer<T: Session> {
         }
     }
     
-    private let port: Int
     private let certificateRepository: CertificateRepository
+    private let networkSettingRepository: NetworkSettingRepository
     private let dependency: T.Dependency
     private var listener: Listener? = nil
     private let connections = Connections()
@@ -275,9 +275,9 @@ class SessionServer<T: Session> {
         listener != nil
     }
     
-    init(port: Int, _ certificateRepository: CertificateRepository, _ dependency: T.Dependency) {
-        self.port = port
+    init(_ certificateRepository: CertificateRepository, _ networkSettingRepository: NetworkSettingRepository, _ dependency: T.Dependency) {
         self.certificateRepository = certificateRepository
+        self.networkSettingRepository = networkSettingRepository
         self.dependency = dependency
     }
     
@@ -288,7 +288,7 @@ class SessionServer<T: Session> {
             let listener = try Listener()
             self.listener = listener
             
-            listener.listen(on: port) { newSocket in
+            listener.listen(on: networkSettingRepository.port) { newSocket in
                 await Logger.shared.log("accepted connection", newSocket)
                 
                 let connection = Connection(newSocket, self.certificateRepository, self.dependency)

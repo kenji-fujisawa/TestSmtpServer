@@ -10,12 +10,30 @@ import Testing
 
 @testable import TestSmtpServer
 
-struct FileBookmarkDataSourceTests {
+class FileBookmarkDataSourceTests {
 
+    private let suiteName = "FileBookmarkDataSourceTests"
+    private let userDefaults: UserDefaults
+    
+    init() {
+        if let userDefaults = UserDefaults(suiteName: suiteName) {
+            self.userDefaults = userDefaults
+        } else {
+            fatalError()
+        }
+    }
+    
+    deinit {
+        if var url = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first {
+            url = url
+                .appendingPathComponent("Preferences")
+                .appendingPathComponent("\(suiteName).plist")
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+    
     @Test func testSaveLoadRemove() async throws {
-        let inMemoryUserDefaults = UserDefaults()
-        inMemoryUserDefaults.removeVolatileDomain(forName: UserDefaults.argumentDomain)
-        let source = UserDefaultsBookmarkDataSource(inMemoryUserDefaults)
+        let source = UserDefaultsBookmarkDataSource(userDefaults)
         
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("tmp.txt")
         let text = "aaa"

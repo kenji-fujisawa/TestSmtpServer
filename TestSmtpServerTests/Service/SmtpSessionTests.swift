@@ -34,7 +34,8 @@ struct SmtpSessionTests {
     @Test func testOnConnect() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         let actions = session.onConnect()
         #expect(actions.count == 1)
@@ -44,7 +45,8 @@ struct SmtpSessionTests {
     @Test func testHandle() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
@@ -219,7 +221,8 @@ struct SmtpSessionTests {
     @Test func testHandle_notAuthorized() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "HELO localhost\r\n".data(using: .utf8) ?? Data()
@@ -255,7 +258,8 @@ struct SmtpSessionTests {
     @Test func testHandle_authWithoutTLS() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
@@ -281,7 +285,8 @@ struct SmtpSessionTests {
     @Test func testHandle_failAuthenticate() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
@@ -335,7 +340,8 @@ struct SmtpSessionTests {
     @Test func testHandle_authWithoutParam() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
@@ -387,7 +393,8 @@ struct SmtpSessionTests {
     @Test func testHandle_badSequence() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ=\r\n".data(using: .utf8) ?? Data()
@@ -474,7 +481,8 @@ struct SmtpSessionTests {
     @Test func testHandle_invalidMailAddres() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "EHLO localhost\r\n".data(using: .utf8) ?? Data()
@@ -566,7 +574,8 @@ struct SmtpSessionTests {
     @Test func testHandleBuffer() async throws {
         let mailRepo = FakeMailRepository()
         let userRepo = FakeUserRepository()
-        let dependency = SmtpDependencies(mailRepo, userRepo)
+        let netRepo = FakeNetworkSettingRepository()
+        let dependency = SmtpDependencies(mailRepo, userRepo, netRepo)
         let session = SmtpSession(dependency)
         
         var msg = "EHLO".data(using: .utf8) ?? Data()
@@ -670,6 +679,11 @@ struct SmtpSessionTests {
         func authenticate(name: String, password: String) async throws -> Bool {
             self.name == name && self.password == password
         }
+    }
+    
+    class FakeNetworkSettingRepository: NetworkSettingRepository {
+        var port: Int { get { 0 } set {} }
+        var bufferSize: Int { get { 1000 } set {} }
     }
 }
 
