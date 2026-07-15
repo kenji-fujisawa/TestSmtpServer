@@ -41,6 +41,12 @@ actor Logger {
         continuations.values.forEach { $0.yield(log) }
     }
     
+    func clear() {
+        log = ""
+        
+        continuations.values.forEach { $0.yield(log) }
+    }
+    
     func getLogStream() -> AsyncStream<String> {
         AsyncStream { continuation in
             if !log.isEmpty {
@@ -89,13 +95,7 @@ class SessionServer<T: Session> {
         func switchToSSL(asServer: Bool) async throws {
             guard let repository = certificateRepository else { return }
             try repository.load(forKey: Constants.certificateKey) { url, password in
-                do {
-                    try switchToSSL(asServer: asServer, certificate: url, password: password)
-                } catch {
-                    Task {
-                        await Logger.shared.log(error, socket)
-                    }
-                }
+                try switchToSSL(asServer: asServer, certificate: url, password: password)
             }
         }
         

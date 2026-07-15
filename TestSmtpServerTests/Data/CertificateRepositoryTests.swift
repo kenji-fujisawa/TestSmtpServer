@@ -75,10 +75,10 @@ struct CertificateRepositoryTests {
             self.key = key
         }
         
-        func load(forKey key: String, callback: (URL) -> Void) throws {
+        func load(forKey key: String, callback: (URL) throws -> Void) throws {
             self.key = key
             if let url = self.url {
-                callback(url)
+                try callback(url)
             }
         }
         

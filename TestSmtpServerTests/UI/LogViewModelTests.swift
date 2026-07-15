@@ -27,6 +27,21 @@ struct LogViewModelTests {
         #expect(viewModel.log == log)
     }
     
+    @Test func testClear() async throws {
+        let repository = FakeLogRepository()
+        let viewModel = LogViewModel(repository)
+        #expect(viewModel.log == "")
+        
+        let log = "aaa"
+        repository.continuation?.yield(log)
+        try await Task.sleep(for: .milliseconds(10))
+        #expect(viewModel.log == log)
+        
+        viewModel.clear()
+        try await Task.sleep(for: .milliseconds(10))
+        #expect(viewModel.log == "")
+    }
+    
     class FakeLogRepository: LogRepository {
         var continuation: AsyncStream<String>.Continuation? = nil
         func getLogStream() -> AsyncStream<String> {
@@ -36,5 +51,9 @@ struct LogViewModelTests {
         }
         
         func getLog() -> String { "" }
+        
+        func clear() async {
+            continuation?.yield("")
+        }
     }
 }

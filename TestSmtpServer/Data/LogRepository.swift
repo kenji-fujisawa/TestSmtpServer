@@ -10,6 +10,7 @@ import Foundation
 protocol LogRepository {
     func getLogStream() async -> AsyncStream<String>
     func getLog() async -> String
+    func clear() async
 }
 
 class DefaultLogRepository: LogRepository {
@@ -25,5 +26,9 @@ class DefaultLogRepository: LogRepository {
     
     func getLog() async -> String {
         await logger.log
+    }
+    
+    func clear() async {
+        await logger.clear()
     }
 }

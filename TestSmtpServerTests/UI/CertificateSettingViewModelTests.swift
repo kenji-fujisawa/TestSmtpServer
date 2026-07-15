@@ -66,9 +66,9 @@ struct CertificateSettingViewModelTests {
             self.password = password
         }
         
-        func load(forKey key: String, callback: (URL, String) -> Void) throws {
+        func load(forKey key: String, callback: (URL, String) throws -> Void) throws {
             if let url = certificate {
-                callback(url, password)
+                try callback(url, password)
             }
         }
         

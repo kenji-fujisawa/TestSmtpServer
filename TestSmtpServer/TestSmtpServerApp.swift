@@ -99,7 +99,7 @@ private class FakeCertificateRepository: CertificateRepository {
     func save(certificate: URL, password: String, forKey key: String) throws {}
     func save(certificate: URL, forKey key: String) throws {}
     func save(password: String, forKey key: String) throws {}
-    func load(forKey key: String, callback: (URL, String) -> Void) throws {}
+    func load(forKey key: String, callback: (URL, String) throws -> Void) throws {}
     func remove(forKey key: String) throws {}
 }
 
@@ -118,6 +118,7 @@ private class FakeNetworkSettingRepository: NetworkSettingRepository {
 private class FakeLogRepository: LogRepository {
     func getLogStream() -> AsyncStream<String> { AsyncStream { _ in } }
     func getLog() -> String { "" }
+    func clear() async {}
 }
 
 private class FakeSecureDataSource: SecureDataSource {
@@ -257,9 +258,9 @@ struct UITestApp: App {
             values[key] = url
         }
         
-        func load(forKey key: String, callback: (URL) -> Void) throws {
+        func load(forKey key: String, callback: (URL) throws -> Void) throws {
             if let url = values[key] {
-                callback(url)
+                try callback(url)
             }
         }
         

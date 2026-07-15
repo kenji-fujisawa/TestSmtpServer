@@ -9,5 +9,5 @@
 - SMTP AUTH による認証
 - MIME デコード
 
-<img width="1012" height="562" alt="Image" src="https://github.com/user-attachments/assets/938d8cf5-c087-4fed-959b-a35094a387a9" />
-<img width="1012" height="562" alt="Image" src="https://github.com/user-attachments/assets/25e27f11-ddb3-43aa-95c1-849be8949817" />
+<img width="1012" height="562" alt="Image" src="https://github.com/user-attachments/assets/c5f866af-5c54-4cdc-9da8-78c3ae07a47b" />
+<img width="1012" height="562" alt="Image" src="https://github.com/user-attachments/assets/1f686fc0-ba86-4aef-bc9a-d944f7784a23" />
